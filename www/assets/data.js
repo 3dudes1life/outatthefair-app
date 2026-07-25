@@ -1,11 +1,11 @@
 /*
-  OUT AT THE FAIR® APP — V0.4 CONTENT
+  OUT AT THE FAIR® APP — V0.5 SHOWCASE CONTENT
   -----------------------------------
   Update fair dates, schedules, people, partners and announcements here.
   The public 2027 fairs remain in a "coming soon" state until confirmed.
 */
 window.OATF_DATA = {
-  version: '0.4.0',
+  version: '0.5.0',
   updated: 'July 24, 2026',
   brand: {
     name: 'Out at the Fair®',

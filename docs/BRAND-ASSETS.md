@@ -1,6 +1,6 @@
 # Brand Asset Replacement
 
-The V0.4 package includes an original temporary icon created only so the PWA can install and the Capacitor project has a complete icon set.
+The V0.5 package includes an original temporary icon created only so the PWA can install and the Capacitor project has a complete icon set.
 
 Before public launch, replace:
 

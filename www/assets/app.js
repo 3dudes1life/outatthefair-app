@@ -3,12 +3,14 @@
 
   const data = window.OATF_DATA;
   const app = document.getElementById('app');
-  const STORAGE_KEY = 'oatf-v0.4-state';
-  const PREVIOUS_KEY = 'oatf-v0.3-state';
-  const LEGACY_KEYS = ['oatf-v0.2-state', 'oatf-v0.1-state'];
+  const STORAGE_KEY = 'oatf-v0.5-state';
+  const PREVIOUS_KEY = 'oatf-v0.4-state';
+  const LEGACY_KEYS = ['oatf-v0.3-state', 'oatf-v0.2-state', 'oatf-v0.1-state'];
   let installPrompt = null;
   let toastTimer = null;
   let mapSelected = 'stage';
+  let showcaseTourStep = 0;
+  let tiltBound = false;
 
   const plannerTasks = [
     ['tickets', 'Tickets ready', 'Save or confirm admission before you leave.'],
@@ -16,6 +18,14 @@
     ['schedule', 'Schedule saved', 'Favorite the performances you do not want to miss.'],
     ['essentials', 'Fair essentials packed', 'Water, sunscreen, charger and anything your group needs.'],
     ['meetup', 'Meet-up plan set', 'Choose one easy place to reconnect if your group separates.']
+  ];
+
+  const tourSteps = [
+    { icon: '✦', kicker: '01 · ENTER FAIR MODE', title: 'The app becomes the event.', text: 'A single tap transforms OATF from a year-round guide into a live fair-day command center.' },
+    { icon: '◷', kicker: '02 · KNOW WHAT IS NEXT', title: 'No hunting through posts.', text: 'Happening Now, Up Next and your saved schedule stay together in one clear timeline.' },
+    { icon: '◈', kicker: '03 · CARRY YOUR DAY', title: 'One animated OATF Pass.', text: 'A personalized showcase pass collects your fair, schedule count, meetup point and Passport progress.' },
+    { icon: '⌁', kicker: '04 · FEEL NATIVE', title: 'Alerts, haptics and Live Activity concepts.', text: 'The showcase includes a real local notification and an interactive Dynamic Island and Lock Screen preview.' },
+    { icon: '🌈', kicker: '05 · COMPLETE THE EXPERIENCE', title: 'The website tells the story. The app guides the day.', text: 'Before, during and after the fair become one connected OATF product.' }
   ];
 
   const defaultState = {
@@ -26,7 +36,9 @@
     notifications: { schedule: true, fair: true, giveaways: false, community: false },
     passport: ['stage'],
     planner: { completed: [], meetup: '', notes: '' },
-    prefs: { largeType: false, highContrast: false, reducedMotion: false }
+    prefs: { largeType: false, highContrast: false, reducedMotion: false },
+    showcaseName: 'William',
+    showcaseSeen: false
   };
 
   const state = loadState();
@@ -123,6 +135,111 @@
     Promise.resolve(Haptics.notification({ type: 'SUCCESS' })).catch(() => {});
   }
 
+
+  function playCinematic(force = false) {
+    try {
+      if (!force && sessionStorage.getItem('oatf-v05-cinematic')) return;
+      sessionStorage.setItem('oatf-v05-cinematic', '1');
+    } catch {}
+    document.querySelector('.cinematic-launch')?.remove();
+    document.body.insertAdjacentHTML('beforeend', `
+      <div class="cinematic-launch" role="presentation">
+        <div class="cinematic-signal"></div>
+        <div class="cinematic-mark">O</div>
+        <p>OUT AT THE FAIR®</p>
+        <h1>ALL BELONG<br><em>AT THE FAIR.</em></h1>
+        <small>V0.5 · SHOWCASE EDITION</small>
+      </div>`);
+    setTimeout(() => haptic('MEDIUM'), 680);
+    setTimeout(() => document.querySelector('.cinematic-launch')?.classList.add('leave'), 2350);
+    setTimeout(() => document.querySelector('.cinematic-launch')?.remove(), 3000);
+  }
+
+  function initializeShowcaseDefaults() {
+    state.demo = true;
+    state.selectedFair = data.demoFair.id;
+    state.showcaseSeen = true;
+    state.favorites = [...new Set([...state.favorites, 'story-1', 'ross', 'glam'])];
+    state.planner.completed = [...new Set([...state.planner.completed, 'tickets', 'parking', 'schedule', 'meetup'])];
+    if (!state.planner.meetup) state.planner.meetup = 'OATF Info Booth · 3:00 PM';
+    if (!state.planner.notes) state.planner.notes = 'Caleb has the tickets. Daniel has the portable charger. Meet at the OATF stage before the Glam Show.';
+    saveState();
+  }
+
+  function celebratePassport() {
+    document.querySelector('.celebration-layer')?.remove();
+    const pieces = Array.from({ length: 72 }, (_, index) => `<i style="--x:${(index * 37) % 100};--d:${(index % 9) * .08}s;--r:${(index * 47) % 360}deg;--c:${index % 6}"></i>`).join('');
+    document.body.insertAdjacentHTML('beforeend', `<div class="celebration-layer" aria-live="polite"><div class="celebration-copy"><span>✓</span><small>PASSPORT COMPLETE</small><strong>You completed<br>Out at the Fair!</strong><button class="btn btn-primary" data-action="close-celebration">Keep exploring</button></div>${pieces}</div>`);
+    successHaptic();
+    setTimeout(() => document.querySelector('.celebration-layer')?.classList.add('settle'), 1800);
+  }
+
+  async function scheduleDemoNotification() {
+    const title = '🌈 Glam Show begins in 15 minutes!';
+    const body = 'Head to the Rainbow Stage. Showcase demo only.';
+    const LocalNotifications = capacitorPlugin('LocalNotifications');
+    if (LocalNotifications?.requestPermissions && LocalNotifications?.schedule) {
+      try {
+        const permission = await LocalNotifications.requestPermissions();
+        if (!['granted', 'prompt-with-rationale'].includes(permission.display)) return showToast('Notification permission was not enabled');
+        await LocalNotifications.schedule({ notifications: [{ id: 505, title, body, schedule: { at: new Date(Date.now() + 10000) }, extra: { route: 'schedule' } }] });
+        showToast('Demo alert scheduled for 10 seconds from now');
+        successHaptic();
+        return;
+      } catch (error) {
+        console.warn('Native local notification unavailable', error);
+      }
+    }
+    if ('Notification' in window) {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') return showToast('Notification permission was not enabled');
+      showToast('Demo alert scheduled for 10 seconds from now');
+      setTimeout(() => new Notification(title, { body, icon: 'icons/icon-192.png' }), 10000);
+      return;
+    }
+    showToast('Use the native app to test the local fair-day alert');
+  }
+
+  async function enablePassTilt() {
+    try {
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        const permission = await DeviceOrientationEvent.requestPermission();
+        if (permission !== 'granted') return showToast('Motion permission was not enabled');
+      }
+      bindPassTilt();
+      showToast('Tilt effect enabled');
+    } catch {
+      showToast('Tilt is not available on this device');
+    }
+  }
+
+  function bindPassTilt() {
+    if (tiltBound) return;
+    tiltBound = true;
+    window.addEventListener('deviceorientation', (event) => {
+      const card = document.querySelector('.oatf-pass');
+      if (!card) return;
+      const x = Math.max(-10, Math.min(10, (event.gamma || 0) / 4));
+      const y = Math.max(-8, Math.min(8, (event.beta || 0) / 8));
+      card.style.setProperty('--pass-rx', `${-y}deg`);
+      card.style.setProperty('--pass-ry', `${x}deg`);
+      card.style.setProperty('--shine-x', `${50 + x * 3}%`);
+      card.style.setProperty('--shine-y', `${50 + y * 3}%`);
+    }, true);
+  }
+
+  function renderTour() {
+    const step = tourSteps[showcaseTourStep];
+    document.querySelector('.tour-backdrop')?.remove();
+    document.body.insertAdjacentHTML('beforeend', `<div class="tour-backdrop" role="dialog" aria-modal="true" aria-label="OATF showcase tour"><article class="tour-card"><button class="tour-close" data-action="close-tour" aria-label="Close tour">×</button><div class="tour-progress">${tourSteps.map((_, index) => `<i class="${index <= showcaseTourStep ? 'active' : ''}"></i>`).join('')}</div><div class="tour-icon">${step.icon}</div><small>${step.kicker}</small><h2>${step.title}</h2><p>${step.text}</p><div class="tour-actions"><button class="btn btn-secondary" data-action="tour-prev" ${showcaseTourStep === 0 ? 'disabled' : ''}>Back</button><button class="btn btn-primary" data-action="${showcaseTourStep === tourSteps.length - 1 ? 'tour-finish' : 'tour-next'}">${showcaseTourStep === tourSteps.length - 1 ? 'See the vision' : 'Next'}</button></div></article></div>`);
+  }
+
+  function startShowcaseTour() {
+    initializeShowcaseDefaults();
+    showcaseTourStep = 0;
+    renderTour();
+  }
+
   async function refreshAppContent() {
     showToast('Checking for the latest OATF content…');
     try {
@@ -149,6 +266,10 @@
       if ((location.hash || '#home') !== '#home') history.back();
       else AppPlugin.minimizeApp?.();
     }).catch?.(() => {});
+
+    const LocalNotifications = capacitorPlugin('LocalNotifications');
+    LocalNotifications?.addListener?.('localNotificationActionPerformed', () => navigate('schedule')).catch?.(() => {});
+    LocalNotifications?.addListener?.('localNotificationReceived', () => haptic('MEDIUM')).catch?.(() => {});
   }
 
   function topbar() {
@@ -159,7 +280,7 @@
           <button class="brand-button" data-nav="home" aria-label="Go home">
             <span class="brand-lockup">
               <span class="mini-mark" aria-hidden="true">O</span>
-              <span class="brand-copy"><strong>Out at the Fair®</strong><span>${state.demo ? 'Fair-day demo is live' : 'All belong at the fair'}</span></span>
+              <span class="brand-copy"><strong>Out at the Fair®</strong><span>${state.demo ? 'Showcase Fair Mode is live' : 'All belong at the fair'}</span></span>
             </span>
           </button>
           <div class="topbar-actions">
@@ -173,7 +294,7 @@
   function banners() {
     return `
       ${!navigator.onLine ? '<div class="offline-banner">Offline mode: your saved guide is still available.</div>' : ''}
-      ${state.demo ? '<div class="demo-banner"><strong>PARTNER DEMO:</strong> LA County content is a product preview, not an announced event.</div>' : ''}`;
+      ${state.demo ? '<div class="demo-banner"><strong>SHOWCASE DEMO:</strong> Sample fair-day content is a product preview, not an announced event.</div>' : ''}`;
   }
 
   function bottomNav(route) {
@@ -184,7 +305,7 @@
       ['my', '♥', 'My OATF'],
       ['more', '☰', 'More']
     ];
-    const secondary = ['fair', 'performers', 'performer', 'community', 'partner', 'map', 'story', 'accessibility', 'notifications', 'participate', 'contact', 'passport', 'planner', 'search'];
+    const secondary = ['fair', 'performers', 'performer', 'community', 'partner', 'map', 'story', 'accessibility', 'notifications', 'participate', 'contact', 'passport', 'planner', 'search', 'showcase', 'pass', 'myday', 'liveactivity', 'vision'];
     const activeName = route.name === 'fair' ? 'fairs' : secondary.includes(route.name) ? 'more' : route.name;
     return `<nav class="bottom-nav" aria-label="Primary navigation">
       ${items.map(([id, icon, label]) => `<button class="nav-button ${activeName === id ? 'active' : ''}" data-nav="${id}" aria-current="${activeName === id ? 'page' : 'false'}"><span class="nav-icon">${icon}</span><span>${label}</span></button>`).join('')}
@@ -257,6 +378,16 @@
 
       <div class="signal-marquee" aria-label="OATF experience highlights"><div class="signal-track"><span>Family-friendly</span><i></i><span>Live entertainment</span><i></i><span>Community connection</span><i></i><span>Inside the full fair experience</span><i></i><span>All belong at the fair</span><i></i></div></div>
 
+      <section class="section showcase-entry ${live ? 'active' : ''}">
+        <article>
+          <div class="showcase-entry-orbit" aria-hidden="true"></div>
+          <small>V0.5 · SHOWCASE EDITION</small>
+          <h2>${live ? 'Fair Mode<br><em>is already live.</em>' : 'Show the complete<br><em>OATF vision.</em>'}</h2>
+          <p>${live ? 'Open the live dashboard, animated pass, My Day timeline and native experience concepts.' : 'One tap loads a polished sample fair day designed to show Caleb and Daniel what this app can become.'}</p>
+          <div class="button-row"><button class="btn btn-primary" data-action="enter-showcase">${live ? 'Open showcase dashboard' : 'Enter Fair Mode'}</button><button class="btn btn-secondary" data-action="start-tour">60-second tour</button></div>
+        </article>
+      </section>
+
       ${live && now ? `<section class="section live-dashboard">
         ${sectionHead('Fair-day signal', 'Happening <em>right now.</em>', 'Sample live status for the partner demo', '<button class="text-action" data-nav="schedule">Full schedule →</button>')}
         <article class="now-card">
@@ -267,7 +398,7 @@
       </section>` : ''}
 
       <section class="section">
-        ${sectionHead('Your experience', 'Everything you need,<br><em>without the hunt.</em>', live ? 'Built for the fairgrounds in your hand' : 'Explore what the polished V0.4 preview can already do')}
+        ${sectionHead('Your experience', 'Everything you need,<br><em>without the hunt.</em>', live ? 'Built for the fairgrounds in your hand' : 'Explore the complete V0.5 showcase experience')}
         <div class="quick-grid editorial">
           <button class="quick-action" data-nav="schedule"><span>◷</span><strong>Schedule</strong><small>Build your day</small></button>
           <button class="quick-action" data-nav="map"><span>⌖</span><strong>Fair Map</strong><small>Find what matters</small></button>
@@ -297,8 +428,8 @@
         <article class="version-card">
           <small>OATF APP · V${esc(data.version)}</small>
           <h2>A real foundation,<br><em>not a throwaway demo.</em></h2>
-          <p>V0.4 is the real-device polish release: safer hero spacing, native haptics, hardware-back support, non-destructive content refresh and a Capacitor setup that opens without TypeScript.</p>
-          <div class="button-row"><button class="btn btn-primary" data-action="toggle-demo">${live ? 'Exit fair-day demo' : 'Try fair-day demo'}</button><button class="btn btn-secondary" data-action="share-app">Share preview</button></div>
+          <p>V0.5 is the showcase release: cinematic launch, Fair Mode, a real local demo alert, animated OATF Pass, My Day timeline, Passport celebration and the future-of-OATF finale.</p>
+          <div class="button-row"><button class="btn btn-primary" data-action="enter-showcase">${live ? 'Open showcase dashboard' : 'Enter Fair Mode'}</button><button class="btn btn-secondary" data-action="share-app">Share preview</button></div>
         </article>
       </section>`;
   }
@@ -347,7 +478,7 @@
   function schedulePage() {
     const items = schedule();
     if (!items.length) return `${pageHead('Your day', 'Schedule <em>coming soon.</em>', 'Confirmed stage times will appear here first. Activate demo mode to test favorites, filters and calendar export.')}
-      <article class="empty-state"><span>◷</span><h2>The stage is ready.</h2><p>The 2027 schedule will activate when the first fair is confirmed.</p><button class="btn btn-primary" data-action="toggle-demo">Try the live schedule demo</button></article>`;
+      <article class="empty-state"><span>◷</span><h2>The stage is ready.</h2><p>The 2027 schedule will activate when the first fair is confirmed.</p><button class="btn btn-primary" data-action="enter-showcase">Enter Fair Mode</button></article>`;
     const categories = ['All', ...new Set(items.map((item) => item.category))];
     return `${pageHead('Live partner demo', 'Build your <em>fair day.</em>', 'Filter the stage schedule, save performances and export your personal itinerary.')}
       <div class="filter-row">${categories.map((category) => `<button class="filter-chip ${category === 'All' ? 'active' : ''}" data-filter-schedule="${esc(category)}">${esc(category)}</button>`).join('')}</div>
@@ -418,7 +549,7 @@
     const selected = data.mapPins.find((pin) => pin.id === mapSelected) || data.mapPins[0];
     const types = ['All', ...new Set(data.mapPins.map((pin) => pin.type))];
     return `${pageHead('Fair-day navigation', 'Find your <em>way.</em>', state.demo ? 'Tap a sample map pin to preview live fairground guidance.' : 'Map details activate when fairground layouts are confirmed.')}
-      ${!state.demo ? '<div class="notice-card"><strong>Preview map</strong><p>This prototype uses sample locations. Activate demo mode to explore the full map experience.</p><button class="btn btn-primary" data-action="toggle-demo">Open map demo</button></div>' : ''}
+      ${!state.demo ? '<div class="notice-card"><strong>Preview map</strong><p>This prototype uses sample locations. Activate demo mode to explore the full map experience.</p><button class="btn btn-primary" data-action="enter-showcase">Enter Fair Mode</button></div>' : ''}
       <div class="filter-row">${types.map((type) => `<button class="filter-chip ${type === 'All' ? 'active' : ''}" data-filter-map="${esc(type)}">${esc(type)}</button>`).join('')}</div>
       <div class="map-shell">
         <div class="map-grid" aria-label="Demo OATF fair map">${data.mapPins.map((pin) => `<button class="map-pin ${mapSelected === pin.id ? 'selected' : ''}" data-map-pin="${pin.id}" data-type="${esc(pin.type)}" style="left:${pin.x}%;top:${pin.y}%" aria-label="${esc(pin.label)}"><span>${pin.icon}</span></button>`).join('')}<div class="map-stage-shape">OATF</div><div class="map-path one"></div><div class="map-path two"></div></div>
@@ -439,7 +570,7 @@
     const percent = Math.round((complete / total) * 100);
     return `${pageHead('Explore the experience', 'OATF <em>Passport.</em>', state.demo ? 'Tap each sample challenge to add or remove a digital stamp.' : 'The passport becomes active on fair day. Try demo mode to preview it.')}
       <article class="passport-header"><small>YOUR PROGRESS</small><strong>${complete}/${total}</strong><div class="progress-track"><span style="width:${percent}%"></span></div><p>${complete === total ? 'Demo passport complete! This could unlock a giveaway entry or fair-day reward.' : 'Complete experiences across the stage, community row and fairgrounds.'}</p></article>
-      <div class="passport-grid">${data.passportChallenges.map((item) => `<button class="passport-stamp ${state.passport.includes(item.id) ? 'complete' : ''}" data-action="passport-stamp" data-id="${item.id}" ${!state.demo ? 'disabled' : ''}><span>${item.icon}</span><div><small>${state.passport.includes(item.id) ? 'STAMPED' : 'CHALLENGE'}</small><strong>${esc(item.title)}</strong><p>${esc(item.text)}</p></div><b>${state.passport.includes(item.id) ? '✓' : '+'}</b></button>`).join('')}</div>`;
+      <div class="passport-grid">${data.passportChallenges.map((item) => `<button class="passport-stamp ${state.passport.includes(item.id) ? 'complete' : ''}" data-action="passport-stamp" data-id="${item.id}" ${!state.demo ? 'disabled' : ''}><span>${item.icon}</span><div><small>${state.passport.includes(item.id) ? 'STAMPED' : 'CHALLENGE'}</small><strong>${esc(item.title)}</strong><p>${esc(item.text)}</p></div><b>${state.passport.includes(item.id) ? '✓' : '+'}</b></button>`).join('')}</div>${state.demo && complete < total ? '<button class="btn btn-primary btn-block passport-complete-demo" data-action="complete-passport">Complete demo passport ✦</button>' : ''}`;
   }
 
 
@@ -473,7 +604,7 @@
       ['giveaways', 'Giveaways', 'App-only giveaways and winner notifications.'],
       ['community', 'Community moments', 'Spotlights and important partner resources.']
     ];
-    return `${pageHead('Choose what matters', 'OATF <em>alerts.</em>', 'V0.4 stores your notification preferences. Remote delivery will activate with OneSignal in a future native build.')}
+    return `${pageHead('Choose what matters', 'OATF <em>alerts.</em>', 'V0.5 stores your preferences and can schedule a real local showcase alert. Remote delivery will activate with OneSignal in a future production build.')}
       <div class="settings-list">${prefs.map(([id, title, text]) => `<button class="setting-row" data-action="notification-pref" data-id="${id}"><span><strong>${title}</strong><small>${text}</small></span><i class="toggle ${state.notifications[id] ? 'on' : ''}"><b></b></i></button>`).join('')}</div>
       <section class="section"><button class="btn btn-primary btn-block" data-action="request-notifications">Test device permission</button><p class="fine-print">Browser permission tests are local. Live remote notifications require the native app credentials and OneSignal configuration.</p></section>`;
   }
@@ -517,8 +648,94 @@
       <div id="search-results" class="search-results"><div class="mini-empty"><span>⌕</span><p>Start typing to search the app.</p></div></div>`;
   }
 
+  function showcasePage() {
+    const now = data.demoSchedule.find((item) => item.status === 'live');
+    const upNext = data.demoSchedule.find((item) => item.status === 'upnext');
+    const saved = data.demoSchedule.filter((item) => isSaved(item.id));
+    const passportPercent = Math.round((state.passport.length / data.passportChallenges.length) * 100);
+    return `<section class="showcase-hero">
+      <div class="showcase-hero-glow"></div>
+      <p><i></i> SHOWCASE FAIR MODE · LIVE</p>
+      <small>ORANGE COUNTY FAIR · SAMPLE EXPERIENCE</small>
+      <h1>Today is<br><em>OATF day.</em></h1>
+      <div class="showcase-clock"><strong>2:18</strong><span>PM</span></div>
+      <div class="button-row"><button class="btn btn-primary" data-action="start-tour">Start 60-second tour</button><button class="btn btn-secondary" data-action="exit-showcase">Exit Fair Mode</button></div>
+    </section>
+
+    <section class="section">${sectionHead('Fair-day signal', 'Happening <em>right now.</em>', 'Everything important without leaving the fair')}
+      <article class="showcase-now"><div class="showcase-now-live"><i></i> LIVE · ${esc(now.time)}–${esc(now.end)}</div><span class="showcase-stage">${esc(now.location)}</span><h2>${esc(now.title)}</h2><p>${esc(now.description)}</p><div class="showcase-next"><small>UP NEXT</small><strong>${esc(upNext.title)}</strong><span>${esc(upNext.time)}</span></div></article>
+    </section>
+
+    <section class="section">${sectionHead('Your command center', 'Carry the whole day<br><em>in one place.</em>')}
+      <div class="showcase-tool-grid">
+        <button data-nav="myday"><span>◷</span><small>MY DAY</small><strong>${saved.length} saved moments</strong><b>Open timeline →</b></button>
+        <button data-nav="pass"><span>◈</span><small>OATF PASS</small><strong>${esc(state.showcaseName || 'Guest')}’s fair day</strong><b>Open pass →</b></button>
+        <button data-nav="passport"><span>✓</span><small>PASSPORT</small><strong>${passportPercent}% complete</strong><b>Collect stamps →</b></button>
+        <button data-action="schedule-demo-notification"><span>⌁</span><small>LIVE ALERT</small><strong>Test a real local notification</strong><b>Send in 10 seconds →</b></button>
+      </div>
+    </section>
+
+    <section class="section">${sectionHead('Native future', 'See what guests<br><em>could feel.</em>', 'Interactive concepts grounded in a real fair-day use case')}
+      <div class="native-preview-grid"><button data-nav="liveactivity"><span class="island-mini"><i></i> OATF · 12 min</span><strong>Dynamic Island + Lock Screen</strong><small>Preview the live event signal</small></button><button data-nav="vision"><span class="vision-mini">BEFORE · DURING · AFTER</span><strong>The complete OATF product vision</strong><small>Finish the showcase</small></button></div>
+    </section>`;
+  }
+
+  function myDayPage() {
+    const saved = data.demoSchedule.filter((item) => isSaved(item.id));
+    const events = saved.length ? saved : data.demoSchedule.filter((item) => ['story-1', 'ross', 'glam'].includes(item.id));
+    return `${pageHead('Your fair in motion', 'My <em>Day.</em>', 'Saved performances, practical plans and the place your group reconnects—organized as one fair-day timeline.')}
+      <article class="myday-summary"><div><small>SHOWCASE SATURDAY</small><strong>${events.length}</strong><span>saved moments</span></div><div><small>MEET-UP</small><strong>3:00</strong><span>${esc(state.planner.meetup || 'OATF Info Booth')}</span></div></article>
+      <div class="myday-timeline">${events.map((item, index) => `<article class="${item.status === 'live' ? 'live' : ''}"><time>${esc(item.time)}</time><i></i><div><small>${item.status === 'live' ? 'HAPPENING NOW' : esc(item.category)}</small><h3>${esc(item.title)}</h3><p>${esc(item.location)}</p>${index === events.length - 1 ? '<b>THE BIG FINALE</b>' : ''}</div></article>`).join('')}<article class="meetup"><time>3:00 PM</time><i></i><div><small>YOUR GROUP</small><h3>Meet Caleb & Daniel</h3><p>${esc(state.planner.meetup || 'OATF Info Booth')}</p></div></article></div>
+      <section class="section">${plannerPreview(true)}</section>
+      <div class="sticky-actions"><button class="btn btn-secondary" data-action="share-plan">Share My Day</button><button class="btn btn-primary" data-nav="pass">Open OATF Pass</button></div>`;
+  }
+
+  function demoQr() {
+    const cells = [0,1,2,3,4,6,8,9,10,12,14,16,18,20,22,24,25,26,27,28,32,34,36,38,40,42,44,46,48,49,50,51,52,54,56,58,60,62,64,66,68,70,72,74,76,78,80,81,82,83,84,88,90,94,96,98,100,102,104,106,108,110,112,114,116,118,120];
+    return `<div class="demo-qr" aria-label="Decorative demo code">${Array.from({length:121}, (_, index) => `<i class="${cells.includes(index) ? 'on' : ''}"></i>`).join('')}</div>`;
+  }
+
+  function passPage() {
+    const saved = data.demoSchedule.filter((item) => isSaved(item.id));
+    const passportPercent = Math.round((state.passport.length / data.passportChallenges.length) * 100);
+    return `${pageHead('Your fair-day identity', 'The OATF <em>Pass.</em>', 'A showcase-only digital pass—not admission—that gathers your fair, schedule and Passport into one shareable moment.')}
+      <article class="oatf-pass" style="--pass-rx:0deg;--pass-ry:0deg;--shine-x:50%;--shine-y:50%">
+        <div class="pass-hologram"></div><div class="pass-wheel" aria-hidden="true"><i></i></div>
+        <header><div class="pass-mark">O</div><div><small>OUT AT THE FAIR®</small><strong>ALL-ACCESS COMMUNITY PASS</strong></div></header>
+        <section><small>PASS HOLDER</small><h2>${esc(state.showcaseName || 'William')}</h2><p>ORANGE COUNTY · SHOWCASE SATURDAY</p></section>
+        <div class="pass-details"><div><small>STATUS</small><strong>FAIR MODE LIVE</strong></div><div><small>MY DAY</small><strong>${saved.length || 3} EVENTS</strong></div><div><small>PASSPORT</small><strong>${passportPercent}%</strong></div></div>
+        <footer>${demoQr()}<div><small>SHOWCASE DEMO</small><strong>NOT AN ADMISSION TICKET</strong><span>OATF · V0.5 · 2027 VISION</span></div></footer>
+      </article>
+      <label class="pass-name-field"><span>PASS NAME</span><input data-showcase-name type="text" value="${esc(state.showcaseName || 'William')}" maxlength="24" placeholder="Your name"></label>
+      <div class="button-stack"><button class="btn btn-primary btn-block" data-action="enable-pass-tilt">Enable phone tilt effect</button><button class="btn btn-secondary btn-block" data-action="share-pass">Share pass</button><button class="btn btn-secondary btn-block" data-nav="myday">Open My Day</button></div>`;
+  }
+
+  function liveActivityPage() {
+    return `${pageHead('Native concept', 'OATF on the<br><em>Lock Screen.</em>', 'A convincing product preview of how a real ActivityKit extension could keep the current and upcoming stage moments visible.')}
+      <section class="activity-stage">
+        <article class="phone-preview"><div class="phone-status"><span>2:18</span><span>▮▮▮ )))</span></div><div class="dynamic-island"><i></i><span>OATF</span><strong>Story Time · 12 min</strong><b>🎡</b></div><div class="phone-wallpaper"><small>OUT AT THE FAIR</small><h2>ALL BELONG<br><em>AT THE FAIR.</em></h2></div><div class="lock-activity"><header><span><i></i> HAPPENING NOW</span><b>12 MIN</b></header><h3>OATF Story Time</h3><p>Rainbow Stage · Summer Daze</p><div><small>UP NEXT</small><strong>Nicole & Scotty · 1:15 PM</strong></div></div></article>
+      </section>
+      <article class="concept-note"><small>CONCEPT PREVIEW</small><h2>The next event stays visible—even when the app is closed.</h2><p>The genuine feature would use Apple ActivityKit and WidgetKit after confirmed schedules and production requirements are ready.</p><button class="btn btn-primary btn-block" data-action="schedule-demo-notification">Test today’s real local alert</button></article>`;
+  }
+
+  function visionPage() {
+    const cards = [
+      ['01', 'BEFORE THE FAIR', 'Discover dates, choose a location, save entertainment and prepare tickets, parking and accessibility needs.'],
+      ['02', 'DURING THE FAIR', 'See what is live, follow your personal timeline, find community and receive only the alerts that matter.'],
+      ['03', 'AFTER THE FAIR', 'Keep photos, revisit organizations, answer a quick survey and discover the next OATF chapter.']
+    ];
+    return `<section class="vision-hero"><small>THE FUTURE OF OUT AT THE FAIR®</small><h1>The website<br><em>tells the story.</em></h1><h2>The app<br><em>guides the day.</em></h2><p>One connected product supporting every fair, every partner and every guest journey.</p></section>
+      <div class="vision-paths">${cards.map(([number,title,text]) => `<article><span>${number}</span><small>${title}</small><p>${text}</p></article>`).join('')}</div>
+      <section class="vision-finale"><div class="vision-rings" aria-hidden="true"></div><p>THE NEXT CHAPTER ARRIVES IN 2027</p><h2>See you<br><em>at the fair.</em></h2><div class="button-row"><button class="btn btn-primary" data-action="replay-cinematic">Replay opening</button><button class="btn btn-secondary" data-nav="showcase">Back to Fair Mode</button></div></section>`;
+  }
+
   function morePage() {
     const menu = [
+      ['showcase', '✦', 'Showcase Fair Mode', 'The complete 60-second presentation'],
+      ['myday', '◷', 'My Day', 'One live timeline for the fair'],
+      ['pass', '◈', 'OATF Pass', 'Animated personalized showcase pass'],
+      ['liveactivity', '⌁', 'Lock Screen concept', 'Dynamic Island and Live Activity preview'],
+      ['vision', '🌈', 'The vision', 'Before, during and after the fair'],
       ['performers', '🎤', 'Performers', 'Meet the sample stage lineup'],
       ['community', '✦', 'Community', 'Organizations, booths and services'],
       ['map', '⌖', 'Fair map', 'Navigation and accessibility pins'],
@@ -531,8 +748,8 @@
     ];
     return `${pageHead('Explore the app', 'More <em>OATF.</em>', 'Everything beyond your home fair and personal schedule.')}
       <div class="more-menu">${menu.map(([route, icon, title, text]) => `<button data-nav="${route}"><span>${icon}</span><div><strong>${title}</strong><small>${text}</small></div><b>›</b></button>`).join('')}</div>
-      <section class="section"><article class="demo-switch-card"><div><small>PARTNER PRESENTATION TOOL</small><h2>${state.demo ? 'Fair-day demo is live.' : 'Preview a complete fair day.'}</h2><p>${state.demo ? 'LA County demo data is active throughout the app.' : 'Activate the clearly labeled LA County partner demo to test the schedule, map, favorites and passport.'}</p></div><button class="btn btn-primary" data-action="toggle-demo">${state.demo ? 'Exit demo mode' : 'Activate demo mode'}</button></article></section>
-      <section class="section"><div class="button-stack"><button class="btn btn-secondary btn-block" data-action="install-app">Install app</button><button class="btn btn-secondary btn-block" data-action="share-app">Share preview</button><button class="btn btn-secondary btn-block" data-action="refresh-app">Refresh app content</button><button class="btn btn-secondary btn-block" data-action="reset-app">Reset local app data</button></div></section>
+      <section class="section"><article class="demo-switch-card"><div><small>PARTNER PRESENTATION TOOL</small><h2>${state.demo ? 'Showcase Fair Mode is live.' : 'Preview the complete OATF product.'}</h2><p>${state.demo ? 'The sample schedule, pass, My Day and native showcase tools are active.' : 'Enter the clearly labeled showcase to load a complete sample fair day for Caleb and Daniel.'}</p></div><button class="btn btn-primary" data-action="enter-showcase">${state.demo ? 'Open showcase' : 'Enter Fair Mode'}</button></article></section>
+      <section class="section"><div class="button-stack"><button class="btn btn-primary btn-block" data-action="start-tour">Start 60-second showcase tour</button><button class="btn btn-secondary btn-block" data-action="replay-cinematic">Replay cinematic opening</button><button class="btn btn-secondary btn-block" data-action="install-app">Install app</button><button class="btn btn-secondary btn-block" data-action="share-app">Share preview</button><button class="btn btn-secondary btn-block" data-action="refresh-app">Refresh app content</button><button class="btn btn-secondary btn-block" data-action="reset-app">Reset local app data</button></div></section>
       <footer class="app-footer"><img src="assets/images/oatf-logo-fallback.svg" alt="Out at the Fair"><p>V${esc(data.version)} · Updated ${esc(data.updated)}</p><small>© OutAt Inc. Out at the Fair® is a registered brand of OutAt Inc.</small></footer>`;
   }
 
@@ -558,6 +775,11 @@
       case 'participate': content = participatePage(); break;
       case 'contact': content = contactPage(); break;
       case 'search': content = searchPage(); break;
+      case 'showcase': content = showcasePage(); break;
+      case 'myday': content = myDayPage(); break;
+      case 'pass': content = passPage(); break;
+      case 'liveactivity': content = liveActivityPage(); break;
+      case 'vision': content = visionPage(); break;
       case 'more': content = morePage(); break;
       default: content = homePage();
     }
@@ -569,7 +791,7 @@
     state.demo = !state.demo;
     state.selectedFair = state.demo ? data.demoFair.id : 'san-diego';
     saveState();
-    showToast(state.demo ? 'Fair-day demo activated' : 'Demo mode turned off');
+    showToast(state.demo ? 'Showcase Fair Mode activated' : 'Fair Mode turned off');
     navigate('home');
   }
 
@@ -588,11 +810,14 @@
   }
 
   function togglePassport(id) {
-    if (!state.demo) return showToast('Activate demo mode to test passport stamps');
+    if (!state.demo) return showToast('Enter Fair Mode to test passport stamps');
+    const wasComplete = state.passport.length === data.passportChallenges.length;
     state.passport = state.passport.includes(id) ? state.passport.filter((item) => item !== id) : [...state.passport, id];
     saveState();
     render();
+    const isComplete = state.passport.length === data.passportChallenges.length;
     showToast(state.passport.includes(id) ? 'Passport stamped!' : 'Stamp removed');
+    if (!wasComplete && isComplete) setTimeout(celebratePassport, 120);
   }
 
   function calendarText(items) {
@@ -605,7 +830,7 @@
       return `${String(h).padStart(2, '0')}${String(m).padStart(2, '0')}00`;
     };
     const events = items.map((item) => `BEGIN:VEVENT\nUID:${item.id}@outatthefair.com\nDTSTAMP:20260725T010000Z\nDTSTART:${date}T${fmtTime(item.time)}\nDTEND:${date}T${fmtTime(item.end)}\nSUMMARY:${item.title.replaceAll(',', '\\,')} — OATF Demo\nLOCATION:${item.location.replaceAll(',', '\\,')}\nDESCRIPTION:${item.description.replaceAll(',', '\\,')} Sample event only.\nEND:VEVENT`).join('\n');
-    return `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//OutAt Inc.//OATF App V0.4//EN\nCALSCALE:GREGORIAN\n${events}\nEND:VCALENDAR`;
+    return `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//OutAt Inc.//OATF App V0.5//EN\nCALSCALE:GREGORIAN\n${events}\nEND:VCALENDAR`;
   }
 
   function downloadCalendar(items, filename) {
@@ -687,6 +912,9 @@
     const q = query.toLowerCase().trim();
     if (!q) { output.innerHTML = '<div class="mini-empty"><span>⌕</span><p>Start typing to search the app.</p></div>'; return; }
     const results = [];
+    if (q.length >= 2 && ['showcase','fair mode','demo','tour'].some((term) => term.includes(q) || q.includes(term))) results.push({ type: 'SHOWCASE', icon: '✦', title: 'Showcase Fair Mode', text: 'Open the complete V0.5 presentation', route: 'showcase' });
+    if (q.length >= 2 && ['pass','wallet','ticket'].some((term) => term.includes(q) || q.includes(term))) results.push({ type: 'TOOL', icon: '◈', title: 'OATF Pass', text: 'Animated personalized showcase pass', route: 'pass' });
+    if (q.length >= 2 && ['dynamic island','lock screen','live activity'].some((term) => term.includes(q) || q.includes(term))) results.push({ type: 'CONCEPT', icon: '⌁', title: 'Lock Screen concept', text: 'Dynamic Island and Live Activity preview', route: 'liveactivity' });
     if (q.length >= 2 && ['planner','tickets','parking','meetup','essentials','plan'].some((term) => term.includes(q) || q.includes(term))) results.push({ type: 'TOOL', icon: '☑', title: 'Fair-day planner', text: 'Tickets, parking, essentials and meet-up plan', route: 'planner' });
     [...data.fairs, data.demoFair].forEach((fair) => {
       const hay = `${fair.name} ${fair.city} ${fair.description} ${fair.features.join(' ')}`.toLowerCase();
@@ -713,7 +941,7 @@
     } else showToast('Notification permission was not enabled');
   }
 
-  app.addEventListener('click', (event) => {
+  document.addEventListener('click', (event) => {
     if (event.target.closest('button, a, [data-fair], [data-person], [data-partner], [data-map-pin]')) haptic('LIGHT');
     const nav = event.target.closest('[data-nav]');
     if (nav) return navigate(nav.dataset.nav);
@@ -747,6 +975,19 @@
     const id = action.dataset.id;
     switch (action.dataset.action) {
       case 'toggle-demo': toggleDemo(); break;
+      case 'enter-showcase': initializeShowcaseDefaults(); successHaptic(); navigate('showcase'); break;
+      case 'exit-showcase': state.demo = false; state.selectedFair = 'san-diego'; saveState(); showToast('Fair Mode turned off'); navigate('home'); break;
+      case 'start-tour': startShowcaseTour(); break;
+      case 'tour-next': showcaseTourStep = Math.min(tourSteps.length - 1, showcaseTourStep + 1); haptic('LIGHT'); renderTour(); break;
+      case 'tour-prev': showcaseTourStep = Math.max(0, showcaseTourStep - 1); haptic('LIGHT'); renderTour(); break;
+      case 'tour-finish': document.querySelector('.tour-backdrop')?.remove(); navigate('vision'); break;
+      case 'close-tour': document.querySelector('.tour-backdrop')?.remove(); break;
+      case 'schedule-demo-notification': scheduleDemoNotification(); break;
+      case 'enable-pass-tilt': enablePassTilt(); break;
+      case 'share-pass': sharePayload({ title: 'My Out at the Fair Pass', text: `${state.showcaseName || 'William'}’s OATF showcase pass · Orange County · Fair Mode Live` }); break;
+      case 'complete-passport': state.passport = data.passportChallenges.map((item) => item.id); saveState(); render(); setTimeout(celebratePassport, 120); break;
+      case 'close-celebration': document.querySelector('.celebration-layer')?.remove(); break;
+      case 'replay-cinematic': playCinematic(true); break;
       case 'favorite': toggleFavorite(id); successHaptic(); break;
       case 'favorite-partner': togglePartnerFavorite(id); successHaptic(); break;
       case 'passport-stamp': togglePassport(id); successHaptic(); break;
@@ -770,6 +1011,7 @@
   });
 
   app.addEventListener('input', (event) => {
+    if (event.target.matches('[data-showcase-name]')) { state.showcaseName = event.target.value; saveState(); const passName = document.querySelector('.oatf-pass section h2'); if (passName) passName.textContent = event.target.value || 'Guest'; return; }
     const plannerField = event.target.dataset.plannerField;
     if (plannerField) {
       state.planner[plannerField] = event.target.value;
@@ -782,6 +1024,18 @@
     if (type === 'global') return globalSearch(event.target.value);
     const selector = type === 'performers' ? '#performer-list .person-card' : '#partner-list .partner-card';
     document.querySelectorAll(selector).forEach((el) => { el.hidden = !el.textContent.toLowerCase().includes(query); });
+  });
+
+  app.addEventListener('pointermove', (event) => {
+    const card = event.target.closest('.oatf-pass');
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    const px = (event.clientX - rect.left) / rect.width;
+    const py = (event.clientY - rect.top) / rect.height;
+    card.style.setProperty('--pass-rx', `${(0.5 - py) * 9}deg`);
+    card.style.setProperty('--pass-ry', `${(px - 0.5) * 12}deg`);
+    card.style.setProperty('--shine-x', `${px * 100}%`);
+    card.style.setProperty('--shine-y', `${py * 100}%`);
   });
 
   app.addEventListener('keydown', (event) => {
@@ -807,4 +1061,5 @@
 
   if (!location.hash) location.hash = 'home';
   else render();
+  setTimeout(() => playCinematic(false), 80);
 })();

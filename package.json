@@ -1,8 +1,8 @@
 {
   "name": "outatthefair-app",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
-  "description": "Out at the Fair\u00ae mobile-first PWA and Capacitor app foundation.",
+  "description": "Out at the Fair\u00ae V0.5 Showcase Edition \u2014 mobile-first PWA and Capacitor app.",
   "scripts": {
     "serve": "python3 -m http.server 4173 --directory www",
     "cap:init": "npx cap init 'Out at the Fair' 'com.outatinc.outatthefair' --web-dir www",
@@ -16,7 +16,8 @@
     "@capacitor/core": "^8.0.0",
     "@capacitor/app": "^8.0.0",
     "@capacitor/haptics": "^8.0.0",
-    "@capacitor/status-bar": "^8.0.0"
+    "@capacitor/status-bar": "^8.0.0",
+    "@capacitor/local-notifications": "^8.0.0"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.0.0",
