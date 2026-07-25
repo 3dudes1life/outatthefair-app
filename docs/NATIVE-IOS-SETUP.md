@@ -1,4 +1,4 @@
-# Native iOS Notes — V0.5
+# Native iOS Notes — V0.6
 
 The project uses `capacitor.config.json`, so TypeScript is not required to parse the Capacitor configuration.
 

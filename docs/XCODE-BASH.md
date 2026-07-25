@@ -1,18 +1,18 @@
-# Open OATF V0.5 in Xcode
+# Open OATF V0.6 in Xcode
 
-Paste this complete block into Terminal after downloading the full V0.5 ZIP:
+Download the full V0.6 ZIP into Downloads, then paste this complete block into Terminal:
 
 ```bash
-ZIP="$(find "$HOME/Downloads" -maxdepth 1 -type f -name 'outatthefair-app-v0.5*.zip' ! -name '*github-upload*' -print0 | xargs -0 ls -t 2>/dev/null | head -n 1)"
+ZIP="$(find "$HOME/Downloads" -maxdepth 1 -type f -name 'outatthefair-app-v0.6*.zip' ! -name '*github-upload*' -print0 | xargs -0 ls -t 2>/dev/null | head -n 1)"
 
 if [ -z "$ZIP" ]; then
-  echo "V0.5 ZIP not found in Downloads."
+  echo "V0.6 ZIP not found in Downloads. Download the full V0.6 ZIP first."
   exit 1
 fi
 
-rm -rf "$HOME/Downloads/outatthefair-app-v0.5"
+rm -rf "$HOME/Downloads/outatthefair-app-v0.6"
 unzip -q "$ZIP" -d "$HOME/Downloads"
-cd "$HOME/Downloads/outatthefair-app-v0.5"
+cd "$HOME/Downloads/outatthefair-app-v0.6"
 
 rm -f capacitor.config.ts
 npm install
@@ -27,4 +27,4 @@ fi
 npx cap open ios
 ```
 
-In Xcode, select an iPhone simulator and press Run.
+In Xcode, select an iPhone simulator and press Run. Do not run `npm audit fix --force` just to open the project.

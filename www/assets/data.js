@@ -1,12 +1,12 @@
 /*
-  OUT AT THE FAIR® APP — V0.5 SHOWCASE CONTENT
+  OUT AT THE FAIR® APP — V0.6 TOGETHER EDITION CONTENT
   -----------------------------------
   Update fair dates, schedules, people, partners and announcements here.
   The public 2027 fairs remain in a "coming soon" state until confirmed.
 */
 window.OATF_DATA = {
-  version: '0.5.0',
-  updated: 'July 24, 2026',
+  version: '0.6.0',
+  updated: 'July 25, 2026',
   brand: {
     name: 'Out at the Fair®',
     shortName: 'OATF',
@@ -203,5 +203,31 @@ window.OATF_DATA = {
     { year: '2018', title: 'Industry recognition', text: 'The Western Fairs Association honors OATF with the Barham Award.' },
     { year: '2019', title: 'Orange County launches', text: 'The OATF footprint continues growing across California fairgrounds.' },
     { year: '2027', title: 'The next chapter', text: 'A renewed model built for sustainable partnership, visibility and belonging.' }
+  ],
+  conciergePrompts: [
+    'What is happening now?',
+    'Where are the restrooms?',
+    'When is the Glam Show?',
+    'Find a quiet space',
+    'What should our group do next?',
+    'Show accessibility help'
+  ],
+  pulseUpdates: [
+    { time: 'NOW', tone: 'pink', icon: '📚', title: 'Story Time is live', text: 'Summer Daze is on the Rainbow Stage now.' },
+    { time: '2 MIN AGO', tone: 'cyan', icon: '🫶', title: 'Quiet Space is low traffic', text: 'A good moment to pause and reset before the next music set.' },
+    { time: '8 MIN AGO', tone: 'gold', icon: '🍋', title: 'Short line at Food & Water', text: 'Nearby lemonade and water refill lines are moving quickly.' },
+    { time: 'TODAY', tone: 'purple', icon: '👑', title: 'Glam Show at 5:00 PM', text: 'Save the signature finale to My OATF so you do not miss it.' }
+  ],
+  crowdLevels: [
+    { id: 'stage', label: 'Rainbow Stage', level: 'Lively', value: 78, note: 'Story Time is happening now.' },
+    { id: 'community', label: 'Community Row', level: 'Easy', value: 34, note: 'Comfortable browsing and short booth waits.' },
+    { id: 'food', label: 'Food & Water', level: 'Moderate', value: 52, note: 'Lines are moving steadily.' },
+    { id: 'quiet', label: 'Quiet Space', level: 'Calm', value: 18, note: 'Low traffic and seating available.' }
+  ],
+  momentFrames: [
+    { id: 'belong', label: 'All Belong', kicker: 'OUT AT THE FAIR®', headline: 'ALL BELONG AT THE FAIR', accent: '#ff3d91' },
+    { id: 'crew', label: 'OATF Crew', kicker: 'FAIR MODE · LIVE', headline: 'OUR OATF CREW', accent: '#35d8ff' },
+    { id: 'glam', label: 'Glam Moment', kicker: 'SEE YOU AT THE FAIR', headline: 'SERVING FAIR-DAY GLAM', accent: '#ffe36e' }
   ]
+
 };

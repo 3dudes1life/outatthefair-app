@@ -1,7 +1,7 @@
 {
   "name": "Out at the Fair\u00ae",
   "short_name": "OATF",
-  "description": "Out at the Fair\u00ae V0.5 Showcase Edition with live Fair Mode, My Day, OATF Pass, maps, schedules and community.",
+  "description": "Out at the Fair\u00ae V0.6 Together Edition with Ask OATF, Together Mode, OATF Moments, Fair Pulse, live Fair Mode, schedules, maps and community.",
   "start_url": "./#home",
   "scope": "./",
   "display": "standalone",
@@ -35,9 +35,9 @@
   ],
   "shortcuts": [
     {
-      "name": "Showcase Fair Mode",
-      "short_name": "Fair Mode",
-      "url": "./#showcase",
+      "name": "Ask OATF",
+      "short_name": "Ask OATF",
+      "url": "./#concierge",
       "icons": [
         {
           "src": "icons/icon-192.png",
@@ -46,9 +46,9 @@
       ]
     },
     {
-      "name": "My Fair Day",
-      "short_name": "My Day",
-      "url": "./#myday",
+      "name": "Together Mode",
+      "short_name": "Together",
+      "url": "./#together",
       "icons": [
         {
           "src": "icons/icon-192.png",
@@ -57,9 +57,9 @@
       ]
     },
     {
-      "name": "OATF Pass",
-      "short_name": "Pass",
-      "url": "./#pass",
+      "name": "OATF Moments",
+      "short_name": "Moments",
+      "url": "./#moments",
       "icons": [
         {
           "src": "icons/icon-192.png",

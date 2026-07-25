@@ -3,14 +3,16 @@
 
   const data = window.OATF_DATA;
   const app = document.getElementById('app');
-  const STORAGE_KEY = 'oatf-v0.5-state';
-  const PREVIOUS_KEY = 'oatf-v0.4-state';
-  const LEGACY_KEYS = ['oatf-v0.3-state', 'oatf-v0.2-state', 'oatf-v0.1-state'];
+  const STORAGE_KEY = 'oatf-v0.6-state';
+  const PREVIOUS_KEY = 'oatf-v0.5-state';
+  const LEGACY_KEYS = ['oatf-v0.4-state', 'oatf-v0.3-state', 'oatf-v0.2-state', 'oatf-v0.1-state'];
   let installPrompt = null;
   let toastTimer = null;
   let mapSelected = 'stage';
   let showcaseTourStep = 0;
   let tiltBound = false;
+  let momentImageData = '';
+  let momentFrame = 'belong';
 
   const plannerTasks = [
     ['tickets', 'Tickets ready', 'Save or confirm admission before you leave.'],
@@ -23,9 +25,10 @@
   const tourSteps = [
     { icon: '✦', kicker: '01 · ENTER FAIR MODE', title: 'The app becomes the event.', text: 'A single tap transforms OATF from a year-round guide into a live fair-day command center.' },
     { icon: '◷', kicker: '02 · KNOW WHAT IS NEXT', title: 'No hunting through posts.', text: 'Happening Now, Up Next and your saved schedule stay together in one clear timeline.' },
-    { icon: '◈', kicker: '03 · CARRY YOUR DAY', title: 'One animated OATF Pass.', text: 'A personalized showcase pass collects your fair, schedule count, meetup point and Passport progress.' },
-    { icon: '⌁', kicker: '04 · FEEL NATIVE', title: 'Alerts, haptics and Live Activity concepts.', text: 'The showcase includes a real local notification and an interactive Dynamic Island and Lock Screen preview.' },
-    { icon: '🌈', kicker: '05 · COMPLETE THE EXPERIENCE', title: 'The website tells the story. The app guides the day.', text: 'Before, during and after the fair become one connected OATF product.' }
+    { icon: '◉', kicker: '03 · ASK OATF', title: 'An offline fair concierge.', text: 'Guests can ask about schedules, restrooms, accessibility, food, community booths and their group plan.' },
+    { icon: '3', kicker: '04 · STAY TOGETHER', title: 'Your fair crew in one place.', text: 'Together Mode keeps William, Caleb and Daniel connected to the same meetup point and live plan.' },
+    { icon: '📸', kicker: '05 · MAKE THE MEMORY', title: 'A branded OATF photo moment.', text: 'Take a photo, choose a frame and create a shareable fair-day keepsake right inside the app.' },
+    { icon: '🌈', kicker: '06 · COMPLETE THE EXPERIENCE', title: 'The website tells the story. The app guides the day.', text: 'Before, during and after the fair become one connected OATF product.' }
   ];
 
   const defaultState = {
@@ -38,7 +41,18 @@
     planner: { completed: [], meetup: '', notes: '' },
     prefs: { largeType: false, highContrast: false, reducedMotion: false },
     showcaseName: 'William',
-    showcaseSeen: false
+    showcaseSeen: false,
+    group: {
+      code: 'OATF-3D1L',
+      members: [
+        { id: 'william', name: 'William', initials: 'W', status: 0, checkedIn: true },
+        { id: 'caleb', name: 'Caleb', initials: 'C', status: 1, checkedIn: false },
+        { id: 'daniel', name: 'Daniel', initials: 'D', status: 2, checkedIn: false }
+      ]
+    },
+    concierge: { history: [{ role: 'bot', text: 'Hey! I’m your offline OATF concierge. Ask me what is happening, where to go or what your crew should do next.' }] },
+    pulse: { reactions: { heart: 0, sparkle: 0, fire: 0 }, reacted: [] },
+    capsuleSealed: false
   };
 
   const state = loadState();
@@ -53,7 +67,10 @@
         ...parsed,
         notifications: { ...defaultState.notifications, ...(parsed.notifications || {}) },
         planner: { ...defaultState.planner, ...(parsed.planner || {}), completed: [...(parsed.planner?.completed || [])] },
-        prefs: { ...defaultState.prefs, ...(parsed.prefs || {}) }
+        prefs: { ...defaultState.prefs, ...(parsed.prefs || {}) },
+        group: { ...defaultState.group, ...(parsed.group || {}), members: parsed.group?.members?.length ? parsed.group.members : defaultState.group.members },
+        concierge: { ...defaultState.concierge, ...(parsed.concierge || {}), history: parsed.concierge?.history?.length ? parsed.concierge.history : defaultState.concierge.history },
+        pulse: { ...defaultState.pulse, ...(parsed.pulse || {}), reactions: { ...defaultState.pulse.reactions, ...(parsed.pulse?.reactions || {}) }, reacted: [...(parsed.pulse?.reacted || [])] }
       };
     } catch {
       return JSON.parse(JSON.stringify(defaultState));
@@ -138,8 +155,8 @@
 
   function playCinematic(force = false) {
     try {
-      if (!force && sessionStorage.getItem('oatf-v05-cinematic')) return;
-      sessionStorage.setItem('oatf-v05-cinematic', '1');
+      if (!force && sessionStorage.getItem('oatf-v06-cinematic')) return;
+      sessionStorage.setItem('oatf-v06-cinematic', '1');
     } catch {}
     document.querySelector('.cinematic-launch')?.remove();
     document.body.insertAdjacentHTML('beforeend', `
@@ -148,7 +165,7 @@
         <div class="cinematic-mark">O</div>
         <p>OUT AT THE FAIR®</p>
         <h1>ALL BELONG<br><em>AT THE FAIR.</em></h1>
-        <small>V0.5 · SHOWCASE EDITION</small>
+        <small>V0.6 · TOGETHER EDITION</small>
       </div>`);
     setTimeout(() => haptic('MEDIUM'), 680);
     setTimeout(() => document.querySelector('.cinematic-launch')?.classList.add('leave'), 2350);
@@ -163,6 +180,7 @@
     state.planner.completed = [...new Set([...state.planner.completed, 'tickets', 'parking', 'schedule', 'meetup'])];
     if (!state.planner.meetup) state.planner.meetup = 'OATF Info Booth · 3:00 PM';
     if (!state.planner.notes) state.planner.notes = 'Caleb has the tickets. Daniel has the portable charger. Meet at the OATF stage before the Glam Show.';
+    state.group.members = state.group.members.map((member, index) => ({ ...member, checkedIn: index === 0 ? true : member.checkedIn }));
     saveState();
   }
 
@@ -284,6 +302,7 @@
             </span>
           </button>
           <div class="topbar-actions">
+            <button class="icon-button concierge-button" data-nav="concierge" aria-label="Ask OATF">✦</button>
             <button class="icon-button" data-nav="search" aria-label="Search the app">⌕</button>
             <button class="icon-button" data-nav="notifications" aria-label="Notifications">🔔</button>
           </div>
@@ -305,7 +324,7 @@
       ['my', '♥', 'My OATF'],
       ['more', '☰', 'More']
     ];
-    const secondary = ['fair', 'performers', 'performer', 'community', 'partner', 'map', 'story', 'accessibility', 'notifications', 'participate', 'contact', 'passport', 'planner', 'search', 'showcase', 'pass', 'myday', 'liveactivity', 'vision'];
+    const secondary = ['fair', 'performers', 'performer', 'community', 'partner', 'map', 'story', 'accessibility', 'notifications', 'participate', 'contact', 'passport', 'planner', 'search', 'showcase', 'pass', 'myday', 'liveactivity', 'vision', 'concierge', 'together', 'moments', 'pulse', 'capsule'];
     const activeName = route.name === 'fair' ? 'fairs' : secondary.includes(route.name) ? 'more' : route.name;
     return `<nav class="bottom-nav" aria-label="Primary navigation">
       ${items.map(([id, icon, label]) => `<button class="nav-button ${activeName === id ? 'active' : ''}" data-nav="${id}" aria-current="${activeName === id ? 'page' : 'false'}"><span class="nav-icon">${icon}</span><span>${label}</span></button>`).join('')}
@@ -381,11 +400,21 @@
       <section class="section showcase-entry ${live ? 'active' : ''}">
         <article>
           <div class="showcase-entry-orbit" aria-hidden="true"></div>
-          <small>V0.5 · SHOWCASE EDITION</small>
+          <small>V0.6 · TOGETHER EDITION</small>
           <h2>${live ? 'Fair Mode<br><em>is already live.</em>' : 'Show the complete<br><em>OATF vision.</em>'}</h2>
           <p>${live ? 'Open the live dashboard, animated pass, My Day timeline and native experience concepts.' : 'One tap loads a polished sample fair day designed to show Caleb and Daniel what this app can become.'}</p>
           <div class="button-row"><button class="btn btn-primary" data-action="enter-showcase">${live ? 'Open showcase dashboard' : 'Enter Fair Mode'}</button><button class="btn btn-secondary" data-action="start-tour">60-second tour</button></div>
         </article>
+      </section>
+
+      <section class="section v06-lab">
+        ${sectionHead('V0.6 experience lab', 'Four new reasons to<br><em>open the app.</em>', 'Offline, interactive and designed to feel alive on the fairgrounds')}
+        <div class="v06-feature-grid">
+          <button class="v06-feature concierge" data-nav="concierge"><span>✦</span><small>ASK OATF</small><strong>Your offline fair concierge.</strong><p>Schedules, maps, accessibility and group answers in seconds.</p><b>Start a conversation →</b></button>
+          <button class="v06-feature together" data-nav="together"><span>3</span><small>TOGETHER MODE</small><strong>Keep the whole crew connected.</strong><p>Meetup point, live statuses and a shared fair-day plan.</p><b>Open the crew →</b></button>
+          <button class="v06-feature moments" data-nav="moments"><span>📸</span><small>OATF MOMENTS</small><strong>Turn the fair into a keepsake.</strong><p>Take a photo and build a branded, shareable OATF frame.</p><b>Create a moment →</b></button>
+          <button class="v06-feature pulse" data-nav="pulse"><span>◉</span><small>FAIR PULSE</small><strong>Feel what is happening around you.</strong><p>Live updates, crowd energy and one-tap reactions.</p><b>See the pulse →</b></button>
+        </div>
       </section>
 
       ${live && now ? `<section class="section live-dashboard">
@@ -398,7 +427,7 @@
       </section>` : ''}
 
       <section class="section">
-        ${sectionHead('Your experience', 'Everything you need,<br><em>without the hunt.</em>', live ? 'Built for the fairgrounds in your hand' : 'Explore the complete V0.5 showcase experience')}
+        ${sectionHead('Your experience', 'Everything you need,<br><em>without the hunt.</em>', live ? 'Built for the fairgrounds in your hand' : 'Explore the complete V0.6 showcase experience')}
         <div class="quick-grid editorial">
           <button class="quick-action" data-nav="schedule"><span>◷</span><strong>Schedule</strong><small>Build your day</small></button>
           <button class="quick-action" data-nav="map"><span>⌖</span><strong>Fair Map</strong><small>Find what matters</small></button>
@@ -428,7 +457,7 @@
         <article class="version-card">
           <small>OATF APP · V${esc(data.version)}</small>
           <h2>A real foundation,<br><em>not a throwaway demo.</em></h2>
-          <p>V0.5 is the showcase release: cinematic launch, Fair Mode, a real local demo alert, animated OATF Pass, My Day timeline, Passport celebration and the future-of-OATF finale.</p>
+          <p>V0.6 is the Together Edition: Ask OATF, crew check-ins, branded photo moments, Fair Pulse and a Memory Capsule join the complete live showcase experience.</p>
           <div class="button-row"><button class="btn btn-primary" data-action="enter-showcase">${live ? 'Open showcase dashboard' : 'Enter Fair Mode'}</button><button class="btn btn-secondary" data-action="share-app">Share preview</button></div>
         </article>
       </section>`;
@@ -604,7 +633,7 @@
       ['giveaways', 'Giveaways', 'App-only giveaways and winner notifications.'],
       ['community', 'Community moments', 'Spotlights and important partner resources.']
     ];
-    return `${pageHead('Choose what matters', 'OATF <em>alerts.</em>', 'V0.5 stores your preferences and can schedule a real local showcase alert. Remote delivery will activate with OneSignal in a future production build.')}
+    return `${pageHead('Choose what matters', 'OATF <em>alerts.</em>', 'V0.6 stores your preferences and can schedule a real local showcase alert. Remote delivery can activate with OneSignal in a future production build.')}
       <div class="settings-list">${prefs.map(([id, title, text]) => `<button class="setting-row" data-action="notification-pref" data-id="${id}"><span><strong>${title}</strong><small>${text}</small></span><i class="toggle ${state.notifications[id] ? 'on' : ''}"><b></b></i></button>`).join('')}</div>
       <section class="section"><button class="btn btn-primary btn-block" data-action="request-notifications">Test device permission</button><p class="fine-print">Browser permission tests are local. Live remote notifications require the native app credentials and OneSignal configuration.</p></section>`;
   }
@@ -704,7 +733,7 @@
         <header><div class="pass-mark">O</div><div><small>OUT AT THE FAIR®</small><strong>ALL-ACCESS COMMUNITY PASS</strong></div></header>
         <section><small>PASS HOLDER</small><h2>${esc(state.showcaseName || 'William')}</h2><p>ORANGE COUNTY · SHOWCASE SATURDAY</p></section>
         <div class="pass-details"><div><small>STATUS</small><strong>FAIR MODE LIVE</strong></div><div><small>MY DAY</small><strong>${saved.length || 3} EVENTS</strong></div><div><small>PASSPORT</small><strong>${passportPercent}%</strong></div></div>
-        <footer>${demoQr()}<div><small>SHOWCASE DEMO</small><strong>NOT AN ADMISSION TICKET</strong><span>OATF · V0.5 · 2027 VISION</span></div></footer>
+        <footer>${demoQr()}<div><small>SHOWCASE DEMO</small><strong>NOT AN ADMISSION TICKET</strong><span>OATF · V0.6 · TOGETHER EDITION</span></div></footer>
       </article>
       <label class="pass-name-field"><span>PASS NAME</span><input data-showcase-name type="text" value="${esc(state.showcaseName || 'William')}" maxlength="24" placeholder="Your name"></label>
       <div class="button-stack"><button class="btn btn-primary btn-block" data-action="enable-pass-tilt">Enable phone tilt effect</button><button class="btn btn-secondary btn-block" data-action="share-pass">Share pass</button><button class="btn btn-secondary btn-block" data-nav="myday">Open My Day</button></div>`;
@@ -729,8 +758,146 @@
       <section class="vision-finale"><div class="vision-rings" aria-hidden="true"></div><p>THE NEXT CHAPTER ARRIVES IN 2027</p><h2>See you<br><em>at the fair.</em></h2><div class="button-row"><button class="btn btn-primary" data-action="replay-cinematic">Replay opening</button><button class="btn btn-secondary" data-nav="showcase">Back to Fair Mode</button></div></section>`;
   }
 
+
+  function conciergeAnswer(query) {
+    const q = query.toLowerCase();
+    const now = schedule().find((item) => item.status === 'live');
+    const upNext = schedule().find((item) => item.status === 'upnext');
+    const meetup = state.planner.meetup || 'OATF Info Booth · 3:00 PM';
+    if (/happening|right now|what.*now|live/.test(q)) return { text: `${now?.title || 'Story Time'} is happening now at ${now?.location || 'the Rainbow Stage'}. ${upNext ? `${upNext.title} begins next at ${upNext.time}.` : ''}`, route: 'schedule' };
+    if (/restroom|bathroom|toilet/.test(q)) return { text: 'Accessible restrooms are northeast of the Rainbow Stage in this demo map. Open the map and tap the ♿ pin for details.', route: 'map' };
+    if (/glam/.test(q)) return { text: 'The OATF Glam Show begins at 5:00 PM on the Rainbow Stage. I can take you to the schedule so you can save it.', route: 'schedule' };
+    if (/quiet|sensory|overwhelm|break|calm/.test(q)) return { text: 'The Quiet Space is currently calm with seating available. It is southeast of Community Row and designed for a lower-sensory reset.', route: 'map' };
+    if (/access|wheelchair|mobility|asl|hearing/.test(q)) return { text: 'The app can show accessible restrooms, stage viewing, quieter space and guest-services guidance. Open Accessibility for the full fair-day guide.', route: 'accessibility' };
+    if (/food|water|lemonade|hungry|drink/.test(q)) return { text: 'Food & Water is showing moderate traffic and the lines are moving steadily. The map pin is southwest of OATF Info.', route: 'map' };
+    if (/group|crew|caleb|daniel|meet/.test(q)) return { text: `Your crew meetup is ${meetup}. ${state.group.members.filter((m) => m.checkedIn).length} of ${state.group.members.length} members are checked in.`, route: 'together' };
+    if (/parking|ticket|ready|prepare/.test(q)) return { text: 'Your Fair-day Planner keeps tickets, parking, essentials and the meetup point together. Open it before you leave home.', route: 'planner' };
+    if (/story/.test(q)) return { text: 'Story Time is live at 1:00 PM and returns at 3:15 PM in the sample schedule.', route: 'schedule' };
+    if (/community|booth|resource|partner/.test(q)) return { text: 'Community Row has local LGBTQ+ support, youth, health and arts organizations. Booths begin at C-04 in the demo directory.', route: 'community' };
+    if (/next|recommend|should.*do/.test(q)) return { text: `${upNext?.title || 'Nicole & Scotty'} is the best next stop at ${upNext?.time || '1:15 PM'}. After that, meet your crew at ${meetup}.`, route: 'myday' };
+    return { text: 'I can help with what is happening now, the next performance, restrooms, accessibility, food, Community Row, the Glam Show or your group meetup. Try one of the quick questions below.' };
+  }
+
+  function sendConcierge(raw) {
+    const query = String(raw || '').trim();
+    if (!query) return;
+    const answer = conciergeAnswer(query);
+    state.concierge.history.push({ role: 'user', text: query }, { role: 'bot', text: answer.text, route: answer.route || '' });
+    state.concierge.history = state.concierge.history.slice(-16);
+    saveState();
+    render();
+    setTimeout(() => document.querySelector('.concierge-thread')?.scrollTo({ top: 99999, behavior: 'smooth' }), 80);
+    haptic('LIGHT');
+  }
+
+  function conciergePage() {
+    const messages = state.concierge.history.map((message) => `<div class="chat-message ${message.role}"><span>${message.role === 'bot' ? 'O' : esc((state.showcaseName || 'You').slice(0,1))}</span><div><p>${esc(message.text)}</p>${message.route ? `<button class="chat-route" data-nav="${message.route}">Open ${message.route === 'myday' ? 'My Day' : message.route} →</button>` : ''}</div></div>`).join('');
+    return `${pageHead('Offline intelligence', 'Ask <em>OATF.</em>', 'A fast, private fair concierge powered entirely by the event information already stored in the app.')}
+      <section class="concierge-shell">
+        <div class="concierge-status"><i></i><div><strong>Ready on the fairgrounds</strong><span>Works even when cellular service does not.</span></div><b>OFFLINE</b></div>
+        <div class="concierge-thread" aria-live="polite">${messages}</div>
+        <div class="concierge-prompts">${data.conciergePrompts.map((prompt) => `<button data-action="concierge-prompt" data-query="${esc(prompt)}">${esc(prompt)}</button>`).join('')}</div>
+        <form class="concierge-form" data-concierge-form><input id="concierge-input" name="question" maxlength="140" autocomplete="off" placeholder="Ask about the fair…"><button type="submit" aria-label="Send question">↑</button></form>
+      </section>
+      <div class="button-row"><button class="btn btn-secondary" data-action="speak-last-answer">Read last answer</button><button class="btn btn-secondary" data-action="concierge-clear">Clear chat</button></div>`;
+  }
+
+  function groupStatusLabel(index) {
+    return ['At the Rainbow Stage', 'Getting lemonade', 'Exploring Community Row', 'Heading to the meetup', 'Taking a quiet break'][index % 5];
+  }
+
+  function togetherPage() {
+    const checked = state.group.members.filter((member) => member.checkedIn).length;
+    const meetup = state.planner.meetup || 'OATF Info Booth · 3:00 PM';
+    return `${pageHead('Shared fair day', 'Better <em>together.</em>', 'A no-account showcase of how a family or friend group could stay connected without turning the fair into a tracking app.')}
+      <article class="crew-pass">
+        <div class="crew-orbit"></div><small>3DUDES1LIFE · FAIR CREW</small><h2>WILLIAM<br>CALEB<br>DANIEL</h2><div class="crew-code"><span>GROUP CODE</span><strong>${esc(state.group.code)}</strong></div><p>${checked} OF ${state.group.members.length} CHECKED IN</p>
+      </article>
+      <section class="section">${sectionHead('Crew status', 'Where everybody<br><em>left off.</em>', 'Demo statuses are stored only on this device')}
+        <div class="crew-members">${state.group.members.map((member) => `<article class="crew-member ${member.checkedIn ? 'checked' : ''}"><button class="crew-avatar" data-action="group-checkin" data-id="${member.id}">${member.checkedIn ? '✓' : esc(member.initials)}</button><div><small>${member.checkedIn ? 'CHECKED IN' : 'TAP TO CHECK IN'}</small><h3>${esc(member.name)}</h3><button class="status-cycle" data-action="group-status" data-id="${member.id}">${esc(groupStatusLabel(member.status))} ↻</button></div></article>`).join('')}</div>
+      </section>
+      <section class="section meetup-beacon"><small>SHARED MEET-UP BEACON</small><h2>${esc(meetup)}</h2><p>${esc(state.planner.notes || 'Meet before the Glam Show and keep one portable charger with the group.')}</p><div class="button-row"><button class="btn btn-primary" data-action="ping-group">Ping the crew</button><button class="btn btn-secondary" data-action="share-group">Share plan</button></div></section>
+      <section class="section"><article class="privacy-note"><span>◎</span><div><strong>Connection without surveillance.</strong><p>A production version could use voluntary check-ins and shared meetup notes—not constant background location tracking.</p></div></article></section>`;
+  }
+
+  function pulsePage() {
+    const reactionDefs = [['heart','♥',142],['sparkle','✦',88],['fire','🔥',64]];
+    return `${pageHead('Live fair signal', 'Feel the<br><em>Fair Pulse.</em>', 'A showcase feed combining stage updates, useful crowd signals and lightweight attendee energy.')}
+      <section class="pulse-hero"><div class="pulse-radar"><i></i><i></i><i></i><b>◉</b></div><small>OATF ENERGY · LIVE DEMO</small><h2>THE FAIR IS<br><em>BUZZING.</em></h2><p>Story Time is live and Community Row is easy to explore.</p><div class="pulse-reactions">${reactionDefs.map(([id,icon,base]) => `<button class="${state.pulse.reacted.includes(id) ? 'reacted' : ''}" data-action="pulse-react" data-id="${id}"><span>${icon}</span><strong>${base + (state.pulse.reactions[id] || 0)}</strong></button>`).join('')}</div></section>
+      <section class="section">${sectionHead('Around the fair', 'Crowd energy,<br><em>not crowd tracking.</em>', 'Simple venue signals can help guests choose a comfortable next stop')}
+        <div class="crowd-grid">${data.crowdLevels.map((item) => `<article><header><span>${esc(item.label)}</span><strong>${esc(item.level)}</strong></header><div class="crowd-meter"><i style="width:${item.value}%"></i></div><p>${esc(item.note)}</p></article>`).join('')}</div>
+      </section>
+      <section class="section">${sectionHead('Live updates', 'The useful stuff,<br><em>right when it matters.</em>')}
+        <div class="pulse-feed">${data.pulseUpdates.map((item) => `<article class="${item.tone}"><span>${item.icon}</span><div><small>${esc(item.time)}</small><h3>${esc(item.title)}</h3><p>${esc(item.text)}</p></div></article>`).join('')}</div>
+      </section>`;
+  }
+
+  function momentFrameData() { return data.momentFrames.find((frame) => frame.id === momentFrame) || data.momentFrames[0]; }
+
+  function momentsPage() {
+    const frame = momentFrameData();
+    return `${pageHead('Create the memory', 'OATF <em>Moments.</em>', 'Take a photo or choose one from your library, then turn it into a branded fair-day keepsake.')}
+      <section class="moment-studio">
+        <div class="moment-preview ${momentImageData ? 'has-photo' : ''}" style="--moment-accent:${frame.accent}">
+          ${momentImageData ? `<img src="${momentImageData}" alt="Selected fair-day moment">` : `<div class="moment-placeholder"><span>📸</span><strong>ADD YOUR FAIR-DAY PHOTO</strong><small>Camera and photo library work in the native app.</small></div>`}
+          <div class="moment-wash"></div><div class="moment-brand"><small>${esc(frame.kicker)}</small><h2>${esc(frame.headline)}</h2><p>${esc(state.showcaseName || 'William')} · FAIR MODE 2027</p></div><div class="moment-corner">O</div>
+        </div>
+        <label class="photo-picker"><input type="file" accept="image/*" capture="environment" data-moment-upload><span>＋</span><strong>${momentImageData ? 'Choose another photo' : 'Take or choose a photo'}</strong></label>
+        <div class="frame-picker">${data.momentFrames.map((item) => `<button class="${item.id === momentFrame ? 'active' : ''}" style="--swatch:${item.accent}" data-action="moment-frame" data-id="${item.id}"><i></i>${esc(item.label)}</button>`).join('')}</div>
+        <div class="button-row"><button class="btn btn-primary" data-action="download-moment">Save image</button><button class="btn btn-secondary" data-action="share-moment">Share moment</button></div>
+      </section>
+      <article class="moment-tip"><span>✦</span><div><strong>Built for organic reach.</strong><p>Every shared photo carries the OATF name, fair-day energy and a clear visual identity without feeling like a generic sponsor frame.</p></div></article>`;
+  }
+
+  async function createMomentBlob() {
+    const frame = momentFrameData();
+    const canvas = document.createElement('canvas'); canvas.width = 1080; canvas.height = 1350;
+    const ctx = canvas.getContext('2d');
+    const gradient = ctx.createLinearGradient(0,0,1080,1350); gradient.addColorStop(0,'#321044'); gradient.addColorStop(.48,'#101022'); gradient.addColorStop(1,'#09060f'); ctx.fillStyle=gradient; ctx.fillRect(0,0,1080,1350);
+    if (momentImageData) {
+      const img = new Image(); img.src = momentImageData; await img.decode();
+      const scale = Math.max(1080/img.width, 1350/img.height); const w=img.width*scale, h=img.height*scale;
+      ctx.drawImage(img,(1080-w)/2,(1350-h)/2,w,h);
+    }
+    const wash=ctx.createLinearGradient(0,400,0,1350); wash.addColorStop(0,'rgba(9,6,15,0)'); wash.addColorStop(.7,'rgba(9,6,15,.72)'); wash.addColorStop(1,'rgba(9,6,15,.96)'); ctx.fillStyle=wash; ctx.fillRect(0,0,1080,1350);
+    ctx.strokeStyle=frame.accent; ctx.lineWidth=18; ctx.strokeRect(28,28,1024,1294);
+    ctx.fillStyle=frame.accent; ctx.beginPath(); ctx.arc(920,130,70,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#09060f'; ctx.font='900 72px Arial'; ctx.textAlign='center'; ctx.fillText('O',920,155);
+    ctx.textAlign='left'; ctx.fillStyle='#fff'; ctx.font='900 34px Arial'; ctx.fillText(frame.kicker,80,1040);
+    ctx.font='900 82px Impact, Arial Narrow, Arial'; const words=frame.headline.split(' '); let lines=[], line=''; words.forEach(word=>{const test=line?line+' '+word:word;if(ctx.measureText(test).width>900){lines.push(line);line=word}else line=test}); if(line)lines.push(line); lines.slice(0,3).forEach((text,i)=>ctx.fillText(text,80,1135+i*78));
+    ctx.fillStyle=frame.accent; ctx.font='800 27px Arial'; ctx.fillText(`${state.showcaseName || 'William'} · FAIR MODE 2027`,80,1310);
+    return await new Promise((resolve)=>canvas.toBlob(resolve,'image/png',.94));
+  }
+
+  async function downloadMoment(share = false) {
+    try {
+      const blob = await createMomentBlob();
+      if (!blob) throw new Error('Image unavailable');
+      const file = new File([blob], 'my-oatf-moment.png', { type:'image/png' });
+      if (share && navigator.canShare?.({ files:[file] })) { await navigator.share({ title:'My OATF Moment', text:'All belong at the fair. 🌈🎡', files:[file] }); return; }
+      const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='my-oatf-moment.png'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000); showToast('OATF Moment saved');
+    } catch (error) { console.warn(error); showToast('Add a photo and try again'); }
+  }
+
+  function capsulePage() {
+    const saved = schedule().filter((item) => isSaved(item.id));
+    const checked = state.group.members.filter((member) => member.checkedIn).length;
+    const passport = Math.round((state.passport.length / data.passportChallenges.length) * 100);
+    return `${pageHead('After the fair', 'Your OATF<br><em>Memory Capsule.</em>', 'A closing screen that turns the day into a story worth keeping and sharing.')}
+      <section class="capsule-card ${state.capsuleSealed ? 'sealed' : ''}"><div class="capsule-glow"></div><small>${state.capsuleSealed ? 'CAPSULE SEALED' : 'FAIR DAY IN PROGRESS'}</small><h2>${esc(state.showcaseName || 'William')}’S<br>OUT AT THE FAIR</h2><p>Orange County · Showcase Saturday</p><div class="capsule-stats"><div><strong>${saved.length || 3}</strong><span>moments saved</span></div><div><strong>${passport}%</strong><span>passport complete</span></div><div><strong>${checked}/3</strong><span>crew checked in</span></div></div><blockquote>“${esc(state.planner.notes || 'A full day of community, live entertainment and one very sparkly Glam Show.')}”</blockquote></section>
+      <section class="section">${sectionHead('Your highlights', 'The day,<br><em>in four signals.</em>')}
+        <div class="capsule-highlights"><article><span>📚</span><small>FIRST STOP</small><strong>Story Time</strong></article><article><span>3</span><small>YOUR PEOPLE</small><strong>William, Caleb & Daniel</strong></article><article><span>📸</span><small>YOUR MOMENT</small><strong>${momentImageData ? 'Photo ready to share' : 'Create an OATF Moment'}</strong></article><article><span>👑</span><small>FINALE</small><strong>OATF Glam Show</strong></article></div>
+      </section>
+      <div class="button-stack"><button class="btn btn-primary btn-block" data-action="seal-capsule">${state.capsuleSealed ? 'Unseal memory capsule' : 'Seal the memory capsule'}</button><button class="btn btn-secondary btn-block" data-action="share-capsule">Share day recap</button><button class="btn btn-secondary btn-block" data-nav="moments">Create photo moment</button></div>`;
+  }
+
   function morePage() {
     const menu = [
+      ['concierge', '✦', 'Ask OATF', 'Offline fair concierge'],
+      ['together', '3', 'Together Mode', 'Crew check-ins and meetup beacon'],
+      ['moments', '📸', 'OATF Moments', 'Create a branded fair-day photo'],
+      ['pulse', '◉', 'Fair Pulse', 'Live updates and crowd energy'],
+      ['capsule', '◇', 'Memory Capsule', 'Turn the day into a shareable recap'],
       ['showcase', '✦', 'Showcase Fair Mode', 'The complete 60-second presentation'],
       ['myday', '◷', 'My Day', 'One live timeline for the fair'],
       ['pass', '◈', 'OATF Pass', 'Animated personalized showcase pass'],
@@ -748,7 +915,7 @@
     ];
     return `${pageHead('Explore the app', 'More <em>OATF.</em>', 'Everything beyond your home fair and personal schedule.')}
       <div class="more-menu">${menu.map(([route, icon, title, text]) => `<button data-nav="${route}"><span>${icon}</span><div><strong>${title}</strong><small>${text}</small></div><b>›</b></button>`).join('')}</div>
-      <section class="section"><article class="demo-switch-card"><div><small>PARTNER PRESENTATION TOOL</small><h2>${state.demo ? 'Showcase Fair Mode is live.' : 'Preview the complete OATF product.'}</h2><p>${state.demo ? 'The sample schedule, pass, My Day and native showcase tools are active.' : 'Enter the clearly labeled showcase to load a complete sample fair day for Caleb and Daniel.'}</p></div><button class="btn btn-primary" data-action="enter-showcase">${state.demo ? 'Open showcase' : 'Enter Fair Mode'}</button></article></section>
+      <section class="section"><article class="demo-switch-card"><div><small>PARTNER PRESENTATION TOOL</small><h2>${state.demo ? 'Showcase Fair Mode is live.' : 'Preview the complete OATF product.'}</h2><p>${state.demo ? 'The sample schedule, Ask OATF, Together Mode, photo studio and native showcase tools are active.' : 'Enter the clearly labeled showcase to load a complete sample fair day for Caleb and Daniel—with their own Together Mode crew.'}</p></div><button class="btn btn-primary" data-action="enter-showcase">${state.demo ? 'Open showcase' : 'Enter Fair Mode'}</button></article></section>
       <section class="section"><div class="button-stack"><button class="btn btn-primary btn-block" data-action="start-tour">Start 60-second showcase tour</button><button class="btn btn-secondary btn-block" data-action="replay-cinematic">Replay cinematic opening</button><button class="btn btn-secondary btn-block" data-action="install-app">Install app</button><button class="btn btn-secondary btn-block" data-action="share-app">Share preview</button><button class="btn btn-secondary btn-block" data-action="refresh-app">Refresh app content</button><button class="btn btn-secondary btn-block" data-action="reset-app">Reset local app data</button></div></section>
       <footer class="app-footer"><img src="assets/images/oatf-logo-fallback.svg" alt="Out at the Fair"><p>V${esc(data.version)} · Updated ${esc(data.updated)}</p><small>© OutAt Inc. Out at the Fair® is a registered brand of OutAt Inc.</small></footer>`;
   }
@@ -780,6 +947,11 @@
       case 'pass': content = passPage(); break;
       case 'liveactivity': content = liveActivityPage(); break;
       case 'vision': content = visionPage(); break;
+      case 'concierge': content = conciergePage(); break;
+      case 'together': content = togetherPage(); break;
+      case 'moments': content = momentsPage(); break;
+      case 'pulse': content = pulsePage(); break;
+      case 'capsule': content = capsulePage(); break;
       case 'more': content = morePage(); break;
       default: content = homePage();
     }
@@ -830,7 +1002,7 @@
       return `${String(h).padStart(2, '0')}${String(m).padStart(2, '0')}00`;
     };
     const events = items.map((item) => `BEGIN:VEVENT\nUID:${item.id}@outatthefair.com\nDTSTAMP:20260725T010000Z\nDTSTART:${date}T${fmtTime(item.time)}\nDTEND:${date}T${fmtTime(item.end)}\nSUMMARY:${item.title.replaceAll(',', '\\,')} — OATF Demo\nLOCATION:${item.location.replaceAll(',', '\\,')}\nDESCRIPTION:${item.description.replaceAll(',', '\\,')} Sample event only.\nEND:VEVENT`).join('\n');
-    return `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//OutAt Inc.//OATF App V0.5//EN\nCALSCALE:GREGORIAN\n${events}\nEND:VCALENDAR`;
+    return `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//OutAt Inc.//OATF App V0.6//EN\nCALSCALE:GREGORIAN\n${events}\nEND:VCALENDAR`;
   }
 
   function downloadCalendar(items, filename) {
@@ -912,10 +1084,13 @@
     const q = query.toLowerCase().trim();
     if (!q) { output.innerHTML = '<div class="mini-empty"><span>⌕</span><p>Start typing to search the app.</p></div>'; return; }
     const results = [];
-    if (q.length >= 2 && ['showcase','fair mode','demo','tour'].some((term) => term.includes(q) || q.includes(term))) results.push({ type: 'SHOWCASE', icon: '✦', title: 'Showcase Fair Mode', text: 'Open the complete V0.5 presentation', route: 'showcase' });
+    if (q.length >= 2 && ['showcase','fair mode','demo','tour'].some((term) => term.includes(q) || q.includes(term))) results.push({ type: 'SHOWCASE', icon: '✦', title: 'Showcase Fair Mode', text: 'Open the complete V0.6 presentation', route: 'showcase' });
     if (q.length >= 2 && ['pass','wallet','ticket'].some((term) => term.includes(q) || q.includes(term))) results.push({ type: 'TOOL', icon: '◈', title: 'OATF Pass', text: 'Animated personalized showcase pass', route: 'pass' });
     if (q.length >= 2 && ['dynamic island','lock screen','live activity'].some((term) => term.includes(q) || q.includes(term))) results.push({ type: 'CONCEPT', icon: '⌁', title: 'Lock Screen concept', text: 'Dynamic Island and Live Activity preview', route: 'liveactivity' });
     if (q.length >= 2 && ['planner','tickets','parking','meetup','essentials','plan'].some((term) => term.includes(q) || q.includes(term))) results.push({ type: 'TOOL', icon: '☑', title: 'Fair-day planner', text: 'Tickets, parking, essentials and meet-up plan', route: 'planner' });
+    if (q.length >= 2 && ['ask','help','concierge','restroom','bathroom','quiet'].some((term) => term.includes(q) || q.includes(term))) results.push({ type: 'TOOL', icon: '✦', title: 'Ask OATF', text: 'Offline fair-day concierge', route: 'concierge' });
+    if (q.length >= 2 && ['group','together','crew','caleb','daniel'].some((term) => term.includes(q) || q.includes(term))) results.push({ type: 'TOOL', icon: '3', title: 'Together Mode', text: 'Crew statuses and meet-up plan', route: 'together' });
+    if (q.length >= 2 && ['photo','moment','camera','memory'].some((term) => term.includes(q) || q.includes(term))) results.push({ type: 'TOOL', icon: '📸', title: 'OATF Moments', text: 'Create a branded fair-day photo', route: 'moments' });
     [...data.fairs, data.demoFair].forEach((fair) => {
       const hay = `${fair.name} ${fair.city} ${fair.description} ${fair.features.join(' ')}`.toLowerCase();
       if (hay.includes(q)) results.push({ type: 'FAIR', icon: fair.emoji, title: fair.name, text: fair.city, route: `fair/${fair.id}` });
@@ -974,6 +1149,19 @@
     if (!action) return;
     const id = action.dataset.id;
     switch (action.dataset.action) {
+      case 'concierge-prompt': sendConcierge(action.dataset.query); break;
+      case 'concierge-clear': state.concierge.history = JSON.parse(JSON.stringify(defaultState.concierge.history)); saveState(); render(); break;
+      case 'speak-last-answer': { const last=[...state.concierge.history].reverse().find((item)=>item.role==='bot'); if (!last || !('speechSynthesis' in window)) return showToast('Speech is not available'); speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance(last.text)); break; }
+      case 'group-checkin': { const member=state.group.members.find((item)=>item.id===id); if(member){member.checkedIn=!member.checkedIn; saveState(); render(); if(state.group.members.every((item)=>item.checkedIn)) successHaptic();} break; }
+      case 'group-status': { const member=state.group.members.find((item)=>item.id===id); if(member){member.status=(member.status+1)%5; saveState(); render();} break; }
+      case 'ping-group': haptic('HEAVY'); showToast(`Crew ping sent: ${state.planner.meetup || 'OATF Info Booth · 3:00 PM'}`); break;
+      case 'share-group': sharePayload({ title:'Our OATF Crew Plan', text:`William, Caleb & Daniel · Meet at ${state.planner.meetup || 'OATF Info Booth · 3:00 PM'} · Group code ${state.group.code}` }); break;
+      case 'pulse-react': if(!state.pulse.reacted.includes(id)){state.pulse.reacted.push(id);state.pulse.reactions[id]=(state.pulse.reactions[id]||0)+1;saveState();successHaptic();render();} break;
+      case 'moment-frame': momentFrame=id; render(); break;
+      case 'download-moment': downloadMoment(false); break;
+      case 'share-moment': downloadMoment(true); break;
+      case 'seal-capsule': state.capsuleSealed=!state.capsuleSealed; saveState(); successHaptic(); render(); if(state.capsuleSealed)setTimeout(celebratePassport,100); break;
+      case 'share-capsule': sharePayload({ title:'My Out at the Fair Day', text:`${state.showcaseName || 'William'}’s OATF day · ${state.favorites.length || 3} events saved · ${Math.round((state.passport.length/data.passportChallenges.length)*100)}% Passport · William, Caleb & Daniel together at the fair.` }); break;
       case 'toggle-demo': toggleDemo(); break;
       case 'enter-showcase': initializeShowcaseDefaults(); successHaptic(); navigate('showcase'); break;
       case 'exit-showcase': state.demo = false; state.selectedFair = 'san-diego'; saveState(); showToast('Fair Mode turned off'); navigate('home'); break;
@@ -1024,6 +1212,25 @@
     if (type === 'global') return globalSearch(event.target.value);
     const selector = type === 'performers' ? '#performer-list .person-card' : '#partner-list .partner-card';
     document.querySelectorAll(selector).forEach((el) => { el.hidden = !el.textContent.toLowerCase().includes(query); });
+  });
+
+
+  app.addEventListener('change', (event) => {
+    const input = event.target.closest('[data-moment-upload]');
+    if (!input?.files?.[0]) return;
+    const file = input.files[0];
+    if (!file.type.startsWith('image/')) return showToast('Choose an image file');
+    const reader = new FileReader();
+    reader.onload = () => { momentImageData = String(reader.result || ''); if (!state.passport.includes('photo')) state.passport.push('photo'); saveState(); successHaptic(); render(); };
+    reader.readAsDataURL(file);
+  });
+
+  app.addEventListener('submit', (event) => {
+    const form = event.target.closest('[data-concierge-form]');
+    if (!form) return;
+    event.preventDefault();
+    const input = form.querySelector('input[name="question"]');
+    sendConcierge(input?.value || '');
   });
 
   app.addEventListener('pointermove', (event) => {
