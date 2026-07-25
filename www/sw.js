@@ -1,4 +1,4 @@
-const CACHE = 'oatf-v0-3-0';
+const CACHE = 'oatf-v0-4-0';
 const APP_SHELL = [
   './', './index.html', './manifest.webmanifest',
   './assets/styles.css', './assets/data.js', './assets/app.js',

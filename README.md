@@ -1,42 +1,46 @@
-# Out at the Fair® App — V0.3 Final Preview
+# Out at the Fair® App — V0.4
 
-A mobile-first Out at the Fair® fair-day companion built as an installable PWA and a Capacitor-ready iOS/Android project foundation.
+A mobile-first fair-day companion built as an installable PWA and Capacitor-ready iOS/Android app.
 
-## V0.3 final polish
+## V0.4 focus
 
-- Matches the new OATF website typography: **Impact** display headlines and **Inter/system sans** body copy
-- Removes the mismatched serif accent treatment from V0.2
-- Adds a locally saved **Fair-day Planner** for tickets, parking, schedule, essentials and a meet-up plan
-- Adds sharing for the user’s planner and saved demo itinerary
-- Adds planner access from Home, My OATF, More and PWA shortcuts
-- Preserves the V0.2 search, accessibility, offline, map, schedule, favorites, community and passport features
+V0.4 is the real-device polish release. The OATF Model card now sits in its own full-width card between the hero description and buttons on phones instead of overlapping “All Belong.” Larger screens retain the floating editorial treatment.
 
-## GitHub upload
+It also adds native haptic feedback, native status-bar styling, Android back-button handling, a non-destructive content refresh control, tighter narrow-iPhone spacing, and a JSON Capacitor config that opens without TypeScript.
 
-Upload everything in the V0.3 GitHub upload package to the repository root. Allow GitHub to replace matching files. The upload package intentionally excludes `.github`, so the existing Pages workflow remains untouched.
+## Upload to GitHub
 
-## Local preview
+Upload the contents of the separate `outatthefair-app-v0.4-github-upload` package to the repository root. Keep the existing `.github/workflows/deploy-pages.yml` file.
 
-```bash
-python3 -m http.server 4173 --directory www
-```
+## Open in Xcode
 
-Open `http://localhost:4173`.
-
-## Native setup
+For a fresh folder:
 
 ```bash
+rm -f capacitor.config.ts
 npm install
 npx cap add ios
 npx cap sync ios
 npx cap open ios
 ```
 
+For an existing `ios` project:
+
+```bash
+npx cap sync ios
+npx cap open ios
+```
+
+
+## One-paste Xcode command
+
+See `docs/XCODE-BASH.md` for a single Terminal block that finds the downloaded V0.4 ZIP, unzips it, installs dependencies, syncs Capacitor and opens Xcode.
+
 ## App identity
 
 - App name: `Out at the Fair`
 - Bundle identifier: `com.outatinc.outatthefair`
-- Version: `0.3.0`
+- Version: `0.4.0`
 - Web directory: `www`
 
 © OutAt Inc. Out at the Fair® is a registered brand of OutAt Inc.

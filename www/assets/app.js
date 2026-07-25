@@ -3,9 +3,9 @@
 
   const data = window.OATF_DATA;
   const app = document.getElementById('app');
-  const STORAGE_KEY = 'oatf-v0.3-state';
-  const PREVIOUS_KEY = 'oatf-v0.2-state';
-  const LEGACY_KEY = 'oatf-v0.1-state';
+  const STORAGE_KEY = 'oatf-v0.4-state';
+  const PREVIOUS_KEY = 'oatf-v0.3-state';
+  const LEGACY_KEYS = ['oatf-v0.2-state', 'oatf-v0.1-state'];
   let installPrompt = null;
   let toastTimer = null;
   let mapSelected = 'stage';
@@ -34,7 +34,7 @@
 
   function loadState() {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(PREVIOUS_KEY) || localStorage.getItem(LEGACY_KEY) || '{}';
+      const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(PREVIOUS_KEY) || LEGACY_KEYS.map((key) => localStorage.getItem(key)).find(Boolean) || '{}';
       const parsed = JSON.parse(saved);
       return {
         ...defaultState,
@@ -104,6 +104,51 @@
     document.body.appendChild(el);
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => el.remove(), 2600);
+  }
+
+
+  function capacitorPlugin(name) {
+    return window.Capacitor?.Plugins?.[name] || null;
+  }
+
+  function haptic(style = 'LIGHT') {
+    const Haptics = capacitorPlugin('Haptics');
+    if (!Haptics?.impact) return;
+    Promise.resolve(Haptics.impact({ style })).catch(() => {});
+  }
+
+  function successHaptic() {
+    const Haptics = capacitorPlugin('Haptics');
+    if (!Haptics?.notification) return haptic('MEDIUM');
+    Promise.resolve(Haptics.notification({ type: 'SUCCESS' })).catch(() => {});
+  }
+
+  async function refreshAppContent() {
+    showToast('Checking for the latest OATF content…');
+    try {
+      const registration = await navigator.serviceWorker?.getRegistration?.();
+      await registration?.update?.();
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.filter((key) => key.startsWith('oatf-')).map((key) => caches.delete(key)));
+      }
+    } catch {}
+    setTimeout(() => location.reload(), 450);
+  }
+
+  function initNativePolish() {
+    if (!window.Capacitor?.isNativePlatform?.()) return;
+    document.documentElement.classList.add('native-app');
+
+    const StatusBar = capacitorPlugin('StatusBar');
+    StatusBar?.setStyle?.({ style: 'LIGHT' }).catch?.(() => {});
+    StatusBar?.setBackgroundColor?.({ color: '#09060f' }).catch?.(() => {});
+
+    const AppPlugin = capacitorPlugin('App');
+    AppPlugin?.addListener?.('backButton', () => {
+      if ((location.hash || '#home') !== '#home') history.back();
+      else AppPlugin.minimizeApp?.();
+    }).catch?.(() => {});
   }
 
   function topbar() {
@@ -199,6 +244,7 @@
           <p class="hero-kicker"><span></span>${live ? 'LIVE PRODUCT DEMO' : esc(data.brand.subtitle)}</p>
           <h1>${live ? 'Your fair.<br><em>Your way.</em>' : 'All Belong<br><em>at the Fair.</em>'}</h1>
           <p>${live ? 'A live fair-day command center for schedules, community, accessibility, maps and the moments guests do not want to miss.' : 'A joyful, family-friendly home base for LGBTQ+ people, families, friends and allies—built directly into the fair experience.'}</p>
+          <div class="hero-float"><span>${live ? 'HAPPENING NOW' : 'THE OATF MODEL'}</span><strong>${live && now ? esc(now.title) : 'Visibility without leaving the fair.'}</strong></div>
           <div class="hero-actions">
             <button class="btn btn-primary" data-nav="${live ? 'schedule' : 'fairs'}">${live ? 'Open live schedule' : 'Explore the 2027 fairs'} <span>→</span></button>
             <button class="btn btn-secondary" data-nav="${live ? 'map' : 'story'}">${live ? 'View the fair map' : 'Discover our story'}</button>
@@ -207,7 +253,6 @@
             ${data.stats.slice(0, 3).map((item) => `<div><strong>${esc(item.value)}</strong><span>${esc(item.label)}</span></div>`).join('')}
           </div>
         </div>
-        <div class="hero-float"><span>${live ? 'HAPPENING NOW' : 'THE OATF MODEL'}</span><strong>${live && now ? esc(now.title) : 'Visibility without leaving the fair.'}</strong></div>
       </section>
 
       <div class="signal-marquee" aria-label="OATF experience highlights"><div class="signal-track"><span>Family-friendly</span><i></i><span>Live entertainment</span><i></i><span>Community connection</span><i></i><span>Inside the full fair experience</span><i></i><span>All belong at the fair</span><i></i></div></div>
@@ -222,7 +267,7 @@
       </section>` : ''}
 
       <section class="section">
-        ${sectionHead('Your experience', 'Everything you need,<br><em>without the hunt.</em>', live ? 'Built for the fairgrounds in your hand' : 'Explore what the final V0.3 preview can already do')}
+        ${sectionHead('Your experience', 'Everything you need,<br><em>without the hunt.</em>', live ? 'Built for the fairgrounds in your hand' : 'Explore what the polished V0.4 preview can already do')}
         <div class="quick-grid editorial">
           <button class="quick-action" data-nav="schedule"><span>◷</span><strong>Schedule</strong><small>Build your day</small></button>
           <button class="quick-action" data-nav="map"><span>⌖</span><strong>Fair Map</strong><small>Find what matters</small></button>
@@ -252,7 +297,7 @@
         <article class="version-card">
           <small>OATF APP · V${esc(data.version)}</small>
           <h2>A real foundation,<br><em>not a throwaway demo.</em></h2>
-          <p>V0.3 locks the app to the website’s exact Impact-and-Inter typography, adds a saved fair-day planner and finishes the core preview without adding unnecessary complexity.</p>
+          <p>V0.4 is the real-device polish release: safer hero spacing, native haptics, hardware-back support, non-destructive content refresh and a Capacitor setup that opens without TypeScript.</p>
           <div class="button-row"><button class="btn btn-primary" data-action="toggle-demo">${live ? 'Exit fair-day demo' : 'Try fair-day demo'}</button><button class="btn btn-secondary" data-action="share-app">Share preview</button></div>
         </article>
       </section>`;
@@ -428,7 +473,7 @@
       ['giveaways', 'Giveaways', 'App-only giveaways and winner notifications.'],
       ['community', 'Community moments', 'Spotlights and important partner resources.']
     ];
-    return `${pageHead('Choose what matters', 'OATF <em>alerts.</em>', 'V0.3 stores your notification preferences. Remote delivery will activate with OneSignal in a future native build.')}
+    return `${pageHead('Choose what matters', 'OATF <em>alerts.</em>', 'V0.4 stores your notification preferences. Remote delivery will activate with OneSignal in a future native build.')}
       <div class="settings-list">${prefs.map(([id, title, text]) => `<button class="setting-row" data-action="notification-pref" data-id="${id}"><span><strong>${title}</strong><small>${text}</small></span><i class="toggle ${state.notifications[id] ? 'on' : ''}"><b></b></i></button>`).join('')}</div>
       <section class="section"><button class="btn btn-primary btn-block" data-action="request-notifications">Test device permission</button><p class="fine-print">Browser permission tests are local. Live remote notifications require the native app credentials and OneSignal configuration.</p></section>`;
   }
@@ -487,7 +532,7 @@
     return `${pageHead('Explore the app', 'More <em>OATF.</em>', 'Everything beyond your home fair and personal schedule.')}
       <div class="more-menu">${menu.map(([route, icon, title, text]) => `<button data-nav="${route}"><span>${icon}</span><div><strong>${title}</strong><small>${text}</small></div><b>›</b></button>`).join('')}</div>
       <section class="section"><article class="demo-switch-card"><div><small>PARTNER PRESENTATION TOOL</small><h2>${state.demo ? 'Fair-day demo is live.' : 'Preview a complete fair day.'}</h2><p>${state.demo ? 'LA County demo data is active throughout the app.' : 'Activate the clearly labeled LA County partner demo to test the schedule, map, favorites and passport.'}</p></div><button class="btn btn-primary" data-action="toggle-demo">${state.demo ? 'Exit demo mode' : 'Activate demo mode'}</button></article></section>
-      <section class="section"><div class="button-stack"><button class="btn btn-secondary btn-block" data-action="install-app">Install app</button><button class="btn btn-secondary btn-block" data-action="share-app">Share preview</button><button class="btn btn-secondary btn-block" data-action="reset-app">Reset local app data</button></div></section>
+      <section class="section"><div class="button-stack"><button class="btn btn-secondary btn-block" data-action="install-app">Install app</button><button class="btn btn-secondary btn-block" data-action="share-app">Share preview</button><button class="btn btn-secondary btn-block" data-action="refresh-app">Refresh app content</button><button class="btn btn-secondary btn-block" data-action="reset-app">Reset local app data</button></div></section>
       <footer class="app-footer"><img src="assets/images/oatf-logo-fallback.svg" alt="Out at the Fair"><p>V${esc(data.version)} · Updated ${esc(data.updated)}</p><small>© OutAt Inc. Out at the Fair® is a registered brand of OutAt Inc.</small></footer>`;
   }
 
@@ -560,7 +605,7 @@
       return `${String(h).padStart(2, '0')}${String(m).padStart(2, '0')}00`;
     };
     const events = items.map((item) => `BEGIN:VEVENT\nUID:${item.id}@outatthefair.com\nDTSTAMP:20260725T010000Z\nDTSTART:${date}T${fmtTime(item.time)}\nDTEND:${date}T${fmtTime(item.end)}\nSUMMARY:${item.title.replaceAll(',', '\\,')} — OATF Demo\nLOCATION:${item.location.replaceAll(',', '\\,')}\nDESCRIPTION:${item.description.replaceAll(',', '\\,')} Sample event only.\nEND:VEVENT`).join('\n');
-    return `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//OutAt Inc.//OATF App V0.3//EN\nCALSCALE:GREGORIAN\n${events}\nEND:VCALENDAR`;
+    return `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//OutAt Inc.//OATF App V0.4//EN\nCALSCALE:GREGORIAN\n${events}\nEND:VCALENDAR`;
   }
 
   function downloadCalendar(items, filename) {
@@ -669,6 +714,7 @@
   }
 
   app.addEventListener('click', (event) => {
+    if (event.target.closest('button, a, [data-fair], [data-person], [data-partner], [data-map-pin]')) haptic('LIGHT');
     const nav = event.target.closest('[data-nav]');
     if (nav) return navigate(nav.dataset.nav);
 
@@ -701,10 +747,10 @@
     const id = action.dataset.id;
     switch (action.dataset.action) {
       case 'toggle-demo': toggleDemo(); break;
-      case 'favorite': toggleFavorite(id); break;
-      case 'favorite-partner': togglePartnerFavorite(id); break;
-      case 'passport-stamp': togglePassport(id); break;
-      case 'planner-task': state.planner.completed = state.planner.completed.includes(id) ? state.planner.completed.filter((item) => item !== id) : [...state.planner.completed, id]; saveState(); render(); break;
+      case 'favorite': toggleFavorite(id); successHaptic(); break;
+      case 'favorite-partner': togglePartnerFavorite(id); successHaptic(); break;
+      case 'passport-stamp': togglePassport(id); successHaptic(); break;
+      case 'planner-task': state.planner.completed = state.planner.completed.includes(id) ? state.planner.completed.filter((item) => item !== id) : [...state.planner.completed, id]; saveState(); successHaptic(); render(); break;
       case 'select-fair': state.selectedFair = id; state.demo = id === data.demoFair.id; saveState(); showToast('Your fair has been updated'); render(); break;
       case 'notification-pref': state.notifications[id] = !state.notifications[id]; saveState(); render(); break;
       case 'accessibility-pref': state.prefs[id] = !state.prefs[id]; saveState(); render(); break;
@@ -712,12 +758,13 @@
       case 'download-day-calendar': downloadCalendar(schedule(), 'oatf-demo-day.ics'); break;
       case 'download-my-calendar': downloadCalendar(schedule().filter((item) => isSaved(item.id)), 'my-oatf-schedule.ics'); break;
       case 'share-app': shareApp(); break;
+      case 'refresh-app': refreshAppContent(); break;
       case 'share-fair': shareFair(id); break;
       case 'share-plan': sharePlan(); break;
       case 'clear-plan': state.planner = JSON.parse(JSON.stringify(defaultState.planner)); saveState(); showToast('Planner cleared'); render(); break;
       case 'install-app': installApp(); break;
       case 'demo-help': showModal('Guest services demo', 'A live fair build can route this button to the selected fair’s official guest-services phone, text line or help desk.', 'Understood'); break;
-      case 'reset-app': try { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(PREVIOUS_KEY); localStorage.removeItem(LEGACY_KEY); } catch {} Object.assign(state, JSON.parse(JSON.stringify(defaultState))); saveState(); showToast('Local app data reset'); navigate('home'); break;
+      case 'reset-app': try { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(PREVIOUS_KEY); LEGACY_KEYS.forEach((key) => localStorage.removeItem(key)); } catch {} Object.assign(state, JSON.parse(JSON.stringify(defaultState))); saveState(); showToast('Local app data reset'); navigate('home'); break;
       case 'close-modal': document.querySelector('.modal-backdrop')?.remove(); break;
     }
   });
@@ -755,6 +802,8 @@
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
   }
+
+  initNativePolish();
 
   if (!location.hash) location.hash = 'home';
   else render();

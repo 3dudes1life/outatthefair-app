@@ -1,11 +1,6 @@
-# Native iOS Setup
+# Native iOS Setup — V0.4
 
-## Requirements
-
-- macOS
-- Node.js 22 or later
-- Xcode version supported by the installed Capacitor release
-- Apple Developer account for device distribution and App Store submission
+The project now uses `capacitor.config.json`, so TypeScript is not required to open it in Xcode.
 
 ## First native build
 
@@ -18,36 +13,25 @@ npx cap open ios
 
 Or double-click `SETUP-MAC.command`.
 
-## Every time the web files change
+## Updating the existing Xcode project
 
-Run:
+After replacing the `www` folder, `package.json` and Capacitor config with V0.4:
 
 ```bash
+rm -f capacitor.config.ts
+npm install
 npx cap sync ios
 npx cap open ios
 ```
 
-The source app always remains in `www/`. Capacitor copies that content into the native project during sync.
+The `rm` line safely removes the older TypeScript config if it is still present. V0.4 uses `capacitor.config.json`.
 
-## Xcode identity
+In Xcode, use:
 
-In Xcode, select the **App** target and configure:
-
-- Team: OutAt Inc. Apple Developer team
+- Team: OutAt Inc.
 - Bundle Identifier: `com.outatinc.outatthefair`
 - Display Name: `Out at the Fair`
-- Version: `0.1.0`
-- Build: `1`
+- Version: `0.4.0`
+- Build: increment from the previous build
 
-## Before App Store submission
-
-Replace the temporary app icon with the final official OATF icon and create approved splash screens. Test:
-
-- All external links
-- Offline mode
-- Safe areas on current iPhones
-- VoiceOver labels
-- Reduced Motion
-- Calendar export
-- Notification permission language
-- Privacy policy URL
+V0.4 also includes native haptic feedback, dark-app status-bar styling and Android hardware-back handling when the matching Capacitor plugins are available.
