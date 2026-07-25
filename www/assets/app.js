@@ -3,11 +3,20 @@
 
   const data = window.OATF_DATA;
   const app = document.getElementById('app');
-  const STORAGE_KEY = 'oatf-v0.2-state';
+  const STORAGE_KEY = 'oatf-v0.3-state';
+  const PREVIOUS_KEY = 'oatf-v0.2-state';
   const LEGACY_KEY = 'oatf-v0.1-state';
   let installPrompt = null;
   let toastTimer = null;
   let mapSelected = 'stage';
+
+  const plannerTasks = [
+    ['tickets', 'Tickets ready', 'Save or confirm admission before you leave.'],
+    ['parking', 'Parking planned', 'Know your lot, rideshare point or transit route.'],
+    ['schedule', 'Schedule saved', 'Favorite the performances you do not want to miss.'],
+    ['essentials', 'Fair essentials packed', 'Water, sunscreen, charger and anything your group needs.'],
+    ['meetup', 'Meet-up plan set', 'Choose one easy place to reconnect if your group separates.']
+  ];
 
   const defaultState = {
     demo: false,
@@ -16,6 +25,7 @@
     savedPartners: [],
     notifications: { schedule: true, fair: true, giveaways: false, community: false },
     passport: ['stage'],
+    planner: { completed: [], meetup: '', notes: '' },
     prefs: { largeType: false, highContrast: false, reducedMotion: false }
   };
 
@@ -24,12 +34,13 @@
 
   function loadState() {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_KEY) || '{}';
+      const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(PREVIOUS_KEY) || localStorage.getItem(LEGACY_KEY) || '{}';
       const parsed = JSON.parse(saved);
       return {
         ...defaultState,
         ...parsed,
         notifications: { ...defaultState.notifications, ...(parsed.notifications || {}) },
+        planner: { ...defaultState.planner, ...(parsed.planner || {}), completed: [...(parsed.planner?.completed || [])] },
         prefs: { ...defaultState.prefs, ...(parsed.prefs || {}) }
       };
     } catch {
@@ -128,7 +139,7 @@
       ['my', '♥', 'My OATF'],
       ['more', '☰', 'More']
     ];
-    const secondary = ['fair', 'performers', 'performer', 'community', 'partner', 'map', 'story', 'accessibility', 'notifications', 'participate', 'contact', 'passport', 'search'];
+    const secondary = ['fair', 'performers', 'performer', 'community', 'partner', 'map', 'story', 'accessibility', 'notifications', 'participate', 'contact', 'passport', 'planner', 'search'];
     const activeName = route.name === 'fair' ? 'fairs' : secondary.includes(route.name) ? 'more' : route.name;
     return `<nav class="bottom-nav" aria-label="Primary navigation">
       ${items.map(([id, icon, label]) => `<button class="nav-button ${activeName === id ? 'active' : ''}" data-nav="${id}" aria-current="${activeName === id ? 'page' : 'false'}"><span class="nav-icon">${icon}</span><span>${label}</span></button>`).join('')}
@@ -211,13 +222,14 @@
       </section>` : ''}
 
       <section class="section">
-        ${sectionHead('Your experience', 'Everything you need,<br><em>without the hunt.</em>', live ? 'Built for the fairgrounds in your hand' : 'Explore what V0.2 can already do')}
+        ${sectionHead('Your experience', 'Everything you need,<br><em>without the hunt.</em>', live ? 'Built for the fairgrounds in your hand' : 'Explore what the final V0.3 preview can already do')}
         <div class="quick-grid editorial">
           <button class="quick-action" data-nav="schedule"><span>◷</span><strong>Schedule</strong><small>Build your day</small></button>
           <button class="quick-action" data-nav="map"><span>⌖</span><strong>Fair Map</strong><small>Find what matters</small></button>
           <button class="quick-action" data-nav="community"><span>✦</span><strong>Community</strong><small>Meet local partners</small></button>
           <button class="quick-action" data-nav="passport"><span>✓</span><strong>Passport</strong><small>Explore and collect</small></button>
         </div>
+        ${plannerPreview()}
       </section>
 
       <section class="section network-section">
@@ -240,7 +252,7 @@
         <article class="version-card">
           <small>OATF APP · V${esc(data.version)}</small>
           <h2>A real foundation,<br><em>not a throwaway demo.</em></h2>
-          <p>V0.2 introduces the website’s new editorial visual system, global search, accessibility preferences, richer fair pages, upgraded passport progress and a cleaner fair-day dashboard.</p>
+          <p>V0.3 locks the app to the website’s exact Impact-and-Inter typography, adds a saved fair-day planner and finishes the core preview without adding unnecessary complexity.</p>
           <div class="button-row"><button class="btn btn-primary" data-action="toggle-demo">${live ? 'Exit fair-day demo' : 'Try fair-day demo'}</button><button class="btn btn-secondary" data-action="share-app">Share preview</button></div>
         </article>
       </section>`;
@@ -316,6 +328,7 @@
       <section class="section">${sectionHead('Saved schedule', `${savedEvents.length} ${savedEvents.length === 1 ? 'moment' : 'moments'}`, state.demo ? 'Your personal fair-day itinerary' : 'Activate the demo to test schedule favorites')}
         ${savedEvents.length ? `<div class="schedule-list compact">${savedEvents.map(scheduleItem).join('')}</div><button class="btn btn-primary btn-block" data-action="download-my-calendar">Download personal calendar</button>` : `<div class="mini-empty"><span>♡</span><p>Tap the heart beside a performance to add it here.</p><button class="text-action" data-nav="schedule">Open schedule →</button></div>`}
       </section>
+      <section class="section">${plannerPreview(true)}</section>
       <section class="section">${sectionHead('Saved community', `${savedPartners.length} ${savedPartners.length === 1 ? 'organization' : 'organizations'}`, 'Keep useful resources close')}
         ${savedPartners.length ? `<div class="partner-list">${savedPartners.map(partnerCard).join('')}</div>` : `<div class="mini-empty"><span>✦</span><p>Save organizations you want to visit or remember.</p><button class="text-action" data-nav="community">Explore community →</button></div>`}
       </section>`;
@@ -384,6 +397,30 @@
       <div class="passport-grid">${data.passportChallenges.map((item) => `<button class="passport-stamp ${state.passport.includes(item.id) ? 'complete' : ''}" data-action="passport-stamp" data-id="${item.id}" ${!state.demo ? 'disabled' : ''}><span>${item.icon}</span><div><small>${state.passport.includes(item.id) ? 'STAMPED' : 'CHALLENGE'}</small><strong>${esc(item.title)}</strong><p>${esc(item.text)}</p></div><b>${state.passport.includes(item.id) ? '✓' : '+'}</b></button>`).join('')}</div>`;
   }
 
+
+  function plannerPreview(compact = false) {
+    const complete = plannerTasks.filter(([id]) => state.planner.completed.includes(id)).length;
+    const percent = Math.round((complete / plannerTasks.length) * 100);
+    return `<article class="planner-preview ${compact ? 'compact' : ''}">
+      <div><small>FAIR-DAY PLANNER</small><h3>${complete}/${plannerTasks.length} ready</h3><p>${state.planner.meetup ? `Meet-up: ${esc(state.planner.meetup)}` : 'Tickets, parking, essentials and one clear meet-up plan.'}</p></div>
+      <div class="planner-preview-progress"><span style="width:${percent}%"></span></div>
+      <button class="btn btn-secondary" data-nav="planner">Open planner →</button>
+    </article>`;
+  }
+
+  function plannerPage() {
+    const complete = plannerTasks.filter(([id]) => state.planner.completed.includes(id)).length;
+    const percent = Math.round((complete / plannerTasks.length) * 100);
+    return `${pageHead('Arrive ready', 'Plan your <em>fair day.</em>', 'A simple checklist, meet-up spot and group note saved only on this device—even when service is weak.')}
+      <article class="planner-score"><small>YOUR READINESS</small><strong>${complete}/${plannerTasks.length}</strong><div class="progress-track"><span style="width:${percent}%"></span></div><p>${complete === plannerTasks.length ? 'Your fair-day basics are ready.' : 'Check off the practical details before you head to the fairgrounds.'}</p></article>
+      <div class="planner-list">${plannerTasks.map(([id, title, text]) => `<button class="planner-task ${state.planner.completed.includes(id) ? 'complete' : ''}" data-action="planner-task" data-id="${id}"><b>${state.planner.completed.includes(id) ? '✓' : ''}</b><span><strong>${esc(title)}</strong><small>${esc(text)}</small></span></button>`).join('')}</div>
+      <section class="section planner-fields">
+        <label><span>GROUP MEET-UP SPOT</span><input type="text" data-planner-field="meetup" value="${esc(state.planner.meetup)}" placeholder="Example: OATF info booth at 3 PM" maxlength="120"></label>
+        <label><span>FAIR-DAY NOTE</span><textarea data-planner-field="notes" placeholder="Accessibility needs, parking row, who has the tickets…" maxlength="500">${esc(state.planner.notes)}</textarea></label>
+      </section>
+      <div class="button-stack"><button class="btn btn-primary btn-block" data-action="share-plan">Share my plan</button><button class="btn btn-secondary btn-block" data-action="clear-plan">Clear planner</button></div>`;
+  }
+
   function notificationsPage() {
     const prefs = [
       ['schedule', 'Schedule reminders', 'Get a reminder before saved performances begin.'],
@@ -391,7 +428,7 @@
       ['giveaways', 'Giveaways', 'App-only giveaways and winner notifications.'],
       ['community', 'Community moments', 'Spotlights and important partner resources.']
     ];
-    return `${pageHead('Choose what matters', 'OATF <em>alerts.</em>', 'V0.2 stores your notification preferences. Remote delivery will activate with OneSignal in a future native build.')}
+    return `${pageHead('Choose what matters', 'OATF <em>alerts.</em>', 'V0.3 stores your notification preferences. Remote delivery will activate with OneSignal in a future native build.')}
       <div class="settings-list">${prefs.map(([id, title, text]) => `<button class="setting-row" data-action="notification-pref" data-id="${id}"><span><strong>${title}</strong><small>${text}</small></span><i class="toggle ${state.notifications[id] ? 'on' : ''}"><b></b></i></button>`).join('')}</div>
       <section class="section"><button class="btn btn-primary btn-block" data-action="request-notifications">Test device permission</button><p class="fine-print">Browser permission tests are local. Live remote notifications require the native app credentials and OneSignal configuration.</p></section>`;
   }
@@ -441,6 +478,7 @@
       ['community', '✦', 'Community', 'Organizations, booths and services'],
       ['map', '⌖', 'Fair map', 'Navigation and accessibility pins'],
       ['passport', '✓', 'OATF Passport', 'Explore and collect experiences'],
+      ['planner', '☑', 'Fair-day planner', 'Tickets, parking, essentials and meet-up'],
       ['story', '◈', 'Our story', 'The complete OATF timeline'],
       ['accessibility', '♿', 'Accessibility', 'Display and fair-day guidance'],
       ['participate', '＋', 'Participate', 'Partner, perform or produce'],
@@ -468,6 +506,7 @@
       case 'partner': content = partnerDetailPage(route.id); break;
       case 'map': content = mapPage(); break;
       case 'passport': content = passportPage(); break;
+      case 'planner': content = plannerPage(); break;
       case 'notifications': content = notificationsPage(); break;
       case 'accessibility': content = accessibilityPage(); break;
       case 'story': content = storyPage(); break;
@@ -521,7 +560,7 @@
       return `${String(h).padStart(2, '0')}${String(m).padStart(2, '0')}00`;
     };
     const events = items.map((item) => `BEGIN:VEVENT\nUID:${item.id}@outatthefair.com\nDTSTAMP:20260725T010000Z\nDTSTART:${date}T${fmtTime(item.time)}\nDTEND:${date}T${fmtTime(item.end)}\nSUMMARY:${item.title.replaceAll(',', '\\,')} — OATF Demo\nLOCATION:${item.location.replaceAll(',', '\\,')}\nDESCRIPTION:${item.description.replaceAll(',', '\\,')} Sample event only.\nEND:VEVENT`).join('\n');
-    return `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//OutAt Inc.//OATF App V0.2//EN\nCALSCALE:GREGORIAN\n${events}\nEND:VCALENDAR`;
+    return `BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//OutAt Inc.//OATF App V0.3//EN\nCALSCALE:GREGORIAN\n${events}\nEND:VCALENDAR`;
   }
 
   function downloadCalendar(items, filename) {
@@ -537,7 +576,7 @@
   async function sharePayload(payload) {
     try {
       if (navigator.share) await navigator.share(payload);
-      else { await navigator.clipboard.writeText(payload.url); showToast('Link copied'); }
+      else { await navigator.clipboard.writeText(payload.text || payload.url || location.href); showToast(payload.url ? 'Link copied' : 'Plan copied'); }
     } catch (error) { if (error?.name !== 'AbortError') showToast('Could not share the link'); }
   }
 
@@ -549,6 +588,23 @@
     const fair = findFair(id);
     if (!fair) return;
     return sharePayload({ title: `${fair.name} — Out at the Fair®`, text: fair.description, url: fair.websiteUrl });
+  }
+
+
+  function sharePlan() {
+    const fair = currentFair();
+    const completed = plannerTasks.filter(([id]) => state.planner.completed.includes(id)).map(([, title]) => `✓ ${title}`);
+    const savedEvents = schedule().filter((item) => isSaved(item.id)).map((item) => `• ${item.time} — ${item.title}`);
+    const lines = [
+      `My Out at the Fair® plan — ${fair.name}`,
+      '',
+      completed.length ? completed.join('\n') : 'No checklist items completed yet.',
+      state.planner.meetup ? `\nMeet-up spot: ${state.planner.meetup}` : '',
+      state.planner.notes ? `Note: ${state.planner.notes}` : '',
+      savedEvents.length ? `\nMy saved schedule:\n${savedEvents.join('\n')}` : '',
+      `\n${location.href.split('#')[0]}`
+    ].filter(Boolean).join('\n');
+    return sharePayload({ title: 'My OATF fair-day plan', text: lines });
   }
 
   async function installApp() {
@@ -586,6 +642,7 @@
     const q = query.toLowerCase().trim();
     if (!q) { output.innerHTML = '<div class="mini-empty"><span>⌕</span><p>Start typing to search the app.</p></div>'; return; }
     const results = [];
+    if (q.length >= 2 && ['planner','tickets','parking','meetup','essentials','plan'].some((term) => term.includes(q) || q.includes(term))) results.push({ type: 'TOOL', icon: '☑', title: 'Fair-day planner', text: 'Tickets, parking, essentials and meet-up plan', route: 'planner' });
     [...data.fairs, data.demoFair].forEach((fair) => {
       const hay = `${fair.name} ${fair.city} ${fair.description} ${fair.features.join(' ')}`.toLowerCase();
       if (hay.includes(q)) results.push({ type: 'FAIR', icon: fair.emoji, title: fair.name, text: fair.city, route: `fair/${fair.id}` });
@@ -647,6 +704,7 @@
       case 'favorite': toggleFavorite(id); break;
       case 'favorite-partner': togglePartnerFavorite(id); break;
       case 'passport-stamp': togglePassport(id); break;
+      case 'planner-task': state.planner.completed = state.planner.completed.includes(id) ? state.planner.completed.filter((item) => item !== id) : [...state.planner.completed, id]; saveState(); render(); break;
       case 'select-fair': state.selectedFair = id; state.demo = id === data.demoFair.id; saveState(); showToast('Your fair has been updated'); render(); break;
       case 'notification-pref': state.notifications[id] = !state.notifications[id]; saveState(); render(); break;
       case 'accessibility-pref': state.prefs[id] = !state.prefs[id]; saveState(); render(); break;
@@ -655,14 +713,22 @@
       case 'download-my-calendar': downloadCalendar(schedule().filter((item) => isSaved(item.id)), 'my-oatf-schedule.ics'); break;
       case 'share-app': shareApp(); break;
       case 'share-fair': shareFair(id); break;
+      case 'share-plan': sharePlan(); break;
+      case 'clear-plan': state.planner = JSON.parse(JSON.stringify(defaultState.planner)); saveState(); showToast('Planner cleared'); render(); break;
       case 'install-app': installApp(); break;
       case 'demo-help': showModal('Guest services demo', 'A live fair build can route this button to the selected fair’s official guest-services phone, text line or help desk.', 'Understood'); break;
-      case 'reset-app': try { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(LEGACY_KEY); } catch {} Object.assign(state, JSON.parse(JSON.stringify(defaultState))); saveState(); showToast('Local app data reset'); navigate('home'); break;
+      case 'reset-app': try { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(PREVIOUS_KEY); localStorage.removeItem(LEGACY_KEY); } catch {} Object.assign(state, JSON.parse(JSON.stringify(defaultState))); saveState(); showToast('Local app data reset'); navigate('home'); break;
       case 'close-modal': document.querySelector('.modal-backdrop')?.remove(); break;
     }
   });
 
   app.addEventListener('input', (event) => {
+    const plannerField = event.target.dataset.plannerField;
+    if (plannerField) {
+      state.planner[plannerField] = event.target.value;
+      saveState();
+      return;
+    }
     const type = event.target.dataset.search;
     if (!type) return;
     const query = event.target.value.toLowerCase().trim();

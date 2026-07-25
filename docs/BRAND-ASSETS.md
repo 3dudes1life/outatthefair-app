@@ -12,4 +12,4 @@ Before public launch, replace:
 
 The final source icon should be a 1024 × 1024 PNG with generous safe padding. The official Out at the Fair logo/unicorn should not touch the outer edges.
 
-The header currently uses a CSS mini-mark so the app does not depend on an unavailable logo file. V0.2 can replace `.mini-mark` in `www/assets/styles.css` with the official transparent logo.
+The header currently uses a CSS mini-mark so the app does not depend on an unavailable logo file. A future native build can replace `.mini-mark` in `www/assets/styles.css` with the official transparent logo.

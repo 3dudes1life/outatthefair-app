@@ -222,14 +222,16 @@ button { color: inherit; }
   text-transform: uppercase;
   letter-spacing: .02em;
 }
-.editorial-hero h1 { margin: 0; font-size: clamp(4.2rem, 15vw, 7.5rem); line-height: .88; max-width: 630px; }
-.editorial-hero h1 em, .page-head h1 em, .section-head h2 em, .version-card h2 em, .passport-preview h2 em, .demo-switch-card h2 em {
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 700;
-  text-transform: none;
-  letter-spacing: -.055em;
+.editorial-hero h1 { margin: 0; font-size: clamp(4.7rem, 16.5vw, 8rem); line-height: .9; letter-spacing: .012em; max-width: 630px; text-wrap: balance; }
+.editorial-hero h1 em, .page-head h1 em, .section-head h2 em, .version-card h2 em, .passport-preview h2 em, .demo-switch-card h2 em,
+.quote-card blockquote em {
+  font-family: inherit;
+  font-style: normal;
+  font-weight: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
   color: transparent;
-  background: linear-gradient(90deg,var(--yellow),var(--orange) 48%,var(--pink));
+  background: linear-gradient(100deg,var(--yellow),var(--orange) 45%,var(--pink));
   background-clip: text;
   -webkit-background-clip: text;
 }
@@ -297,7 +299,7 @@ button { color: inherit; }
 .section { position: relative; margin-top: 42px; }
 .section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; margin-bottom: 18px; }
 .section-head > div:first-child { min-width: 0; }
-.section-head h2 { margin: 0; font-size: clamp(2.65rem, 9vw, 4.6rem); line-height: .96; }
+.section-head h2 { margin: 0; font-size: clamp(3rem, 10vw, 5rem); line-height: .98; letter-spacing: .015em; text-wrap: balance; }
 .section-subtitle { margin: 10px 0 0; max-width: 520px; color: var(--muted); font-size: 12px; }
 .text-action {
   border: 0;
@@ -413,7 +415,7 @@ button { color: inherit; }
 .version-card p, .passport-preview p, .demo-switch-card p { margin: 0; color: var(--muted); font-size: 13px; }
 
 .page-head { padding: 33px 4px 9px; }
-.page-head h1 { margin: 0; font-size: clamp(4rem, 14vw, 7rem); line-height: .88; }
+.page-head h1 { margin: 0; font-size: clamp(4.4rem, 15.5vw, 7.5rem); line-height: .9; letter-spacing: .012em; text-wrap: balance; }
 .page-head > p:last-child { margin: 18px 0 0; max-width: 600px; color: var(--muted); font-size: 14px; }
 
 .fair-detail-hero {
@@ -440,7 +442,7 @@ button { color: inherit; }
 .fair-detail-hero > small { color: var(--cyan); font-size: 9px; font-weight: 950; letter-spacing: .16em; }
 .fair-detail-hero .status { margin-top: 14px; }
 .fair-detail-hero h1 { margin: 20px 0 0; font-size: 62px; line-height: .87; }
-.fair-detail-hero h2 { margin: 9px 0 0; max-width: 440px; font-family: Georgia, serif; font-size: 26px; line-height: 1.06; color: var(--yellow); }
+.fair-detail-hero h2 { margin: 12px 0 0; max-width: 520px; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 18px; font-weight: 850; line-height: 1.28; color: var(--yellow); letter-spacing: -.02em; }
 .fair-detail-hero p { margin: 15px 0 0; max-width: 520px; color: #ddd1e4; font-size: 13px; }
 .fair-detail-hero > em { position: absolute; top: 42px; right: 22px; font-style: normal; font-size: 94px; opacity: .22; transform: rotate(-8deg); }
 
@@ -459,7 +461,7 @@ button { color: inherit; }
 .tool-grid small { display: block; margin-top: 3px; color: var(--muted); font-size: 9px; }
 .quote-card { padding: 24px; border-left: 3px solid var(--pink); background: linear-gradient(90deg,rgba(255,47,146,.1),transparent); }
 .quote-card > p { margin: 0 0 9px; color: var(--cyan); font-size: 8px; font-weight: 950; letter-spacing: .16em; }
-.quote-card blockquote { margin: 0; font-family: Georgia, serif; font-size: 23px; line-height: 1.18; }
+.quote-card blockquote { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 22px; font-weight: 850; line-height: 1.22; letter-spacing: -.035em; }
 .quote-card blockquote em { color: var(--yellow); }
 
 .empty-state, .notice-card, .mini-empty {
@@ -536,7 +538,7 @@ button { color: inherit; }
 .profile-hero { margin-top: 6px; padding: 29px; border: 1px solid var(--line); border-radius: 30px; background: radial-gradient(circle at 80% 10%,rgba(255,47,146,.24),transparent 26%),linear-gradient(145deg,#241030,#0c0a15); box-shadow: var(--shadow); }
 .profile-icon { width: 82px; height: 82px; border-radius: 25px; font-size: 42px; }
 .profile-hero h1 { margin: 8px 0 13px; font-family: Impact, sans-serif; font-size: 54px; line-height: .9; text-transform: uppercase; letter-spacing: .04em; }
-.profile-hero blockquote { margin: 0; color: #ddd1e4; font-family: Georgia, serif; font-size: 19px; line-height: 1.27; }
+.profile-hero blockquote { margin: 0; color: #ddd1e4; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 17px; font-weight: 700; line-height: 1.45; letter-spacing: -.015em; }
 .community-profile .feature-cloud { margin: 21px 0; }
 
 .partner-list { display: grid; gap: 10px; }
@@ -694,3 +696,44 @@ button { color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
 }
+
+
+/* V0.3 fair-day planner */
+.planner-preview {
+  margin-top: 12px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 25px;
+  background:
+    radial-gradient(circle at 90% 15%,rgba(52,216,255,.16),transparent 30%),
+    linear-gradient(145deg,rgba(139,71,255,.18),rgba(255,255,255,.035));
+  box-shadow: 0 18px 55px rgba(0,0,0,.2);
+}
+.planner-preview.compact { margin-top: 0; }
+.planner-preview small, .planner-score small, .planner-fields label > span {
+  color: var(--cyan);
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.planner-preview h3 { margin: 6px 0 4px; font-family: Impact,Haettenschweiler,"Arial Narrow Bold",sans-serif; font-size: 34px; font-weight: 400; line-height: 1; letter-spacing: .015em; text-transform: uppercase; }
+.planner-preview p { margin: 0; color: var(--muted); font-size: 12px; }
+.planner-preview-progress { height: 5px; margin: 17px 0; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.1); }
+.planner-preview-progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,var(--pink),var(--orange),var(--yellow),var(--cyan)); }
+.planner-preview .btn { width: 100%; }
+.planner-score { padding: 24px; border: 1px solid var(--line); border-radius: 28px; background: radial-gradient(circle at 82% 0,rgba(255,47,146,.2),transparent 35%),linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.025)); }
+.planner-score > strong { display: block; margin-top: 8px; font-family: Impact,Haettenschweiler,"Arial Narrow Bold",sans-serif; font-size: 62px; font-weight: 400; line-height: 1; letter-spacing: .012em; }
+.planner-score p { margin: 12px 0 0; color: var(--muted); font-size: 13px; }
+.planner-list { display: grid; gap: 10px; margin-top: 18px; }
+.planner-task { width: 100%; min-height: 82px; display: grid; grid-template-columns: 40px 1fr; align-items: center; gap: 13px; padding: 16px; border: 1px solid var(--line); border-radius: 20px; background: rgba(255,255,255,.045); text-align: left; cursor: pointer; }
+.planner-task > b { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.3); border-radius: 11px; color: #09060f; background: rgba(255,255,255,.04); }
+.planner-task.complete { border-color: rgba(56,220,130,.45); background: rgba(56,220,130,.08); }
+.planner-task.complete > b { border-color: transparent; background: var(--green); }
+.planner-task strong { display: block; font-size: 14px; }
+.planner-task small { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; line-height: 1.4; }
+.planner-fields { display: grid; gap: 12px; }
+.planner-fields label { display: grid; gap: 8px; }
+.planner-fields input, .planner-fields textarea { width: 100%; border: 1px solid var(--line); border-radius: 17px; background: rgba(255,255,255,.055); color: var(--ink); padding: 14px 15px; outline: none; }
+.planner-fields input:focus, .planner-fields textarea:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(52,216,255,.12); }
+.planner-fields textarea { min-height: 116px; resize: vertical; }

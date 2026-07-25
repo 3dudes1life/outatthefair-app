@@ -18,6 +18,7 @@
     {"name":"Fairs","short_name":"Fairs","url":"./#fairs","icons":[{"src":"icons/icon-192.png","sizes":"192x192"}]},
     {"name":"Schedule","short_name":"Schedule","url":"./#schedule","icons":[{"src":"icons/icon-192.png","sizes":"192x192"}]},
     {"name":"My OATF","short_name":"My OATF","url":"./#my","icons":[{"src":"icons/icon-192.png","sizes":"192x192"}]},
+    {"name":"Fair-day Planner","short_name":"Planner","url":"./#planner","icons":[{"src":"icons/icon-192.png","sizes":"192x192"}]},
     {"name":"Search","short_name":"Search","url":"./#search","icons":[{"src":"icons/icon-192.png","sizes":"192x192"}]}
   ]
 }
