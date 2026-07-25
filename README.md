@@ -1,49 +1,36 @@
-# Out at the Fair® App — V0.1
+# Out at the Fair® App — V0.2
 
 A mobile-first Out at the Fair® fair-day companion built as an installable PWA and a Capacitor-ready iOS/Android project foundation.
 
+V0.2 brings the app into the same visual world as the rebuilt OATF website: deep plum-black backgrounds, aurora color, editorial typography, bold fair cards, rainbow signal details and a more premium fair-day dashboard.
 
-## Preview
+## V0.2 highlights
 
-<table>
-<tr>
-<td><img src="docs/preview-home-2027.png" width="280" alt="OATF 2027 app home preview"></td>
-<td><img src="docs/preview-home-demo.png" width="280" alt="OATF partner demo home preview"></td>
-</tr>
-</table>
-
-## What is included
-
-- 2027 holding experience for San Diego, Orange County, and Riverside County fairs
-- Clearly labeled **LA County Fair partner demo mode** (not a public event announcement)
-- Fair selector and locally saved home fair
-- Live demo schedule with Happening Now / Up Next states
-- My OATF favorites and downloadable `.ics` calendar files
-- Performer profiles and searchable community directory
+- New **All Belong at the Fair** editorial home experience
+- Visual system aligned with the new OATF website
+- Public 2027 holding experience for Riverside, San Diego and Orange County
+- Clearly labeled LA County **partner demo mode**
+- Live demo schedule with Happening Now and Up Next states
+- My OATF favorites and downloadable `.ics` calendars
+- Global app search across fairs, performers, community and history
+- Richer fair pages with direct links to the rebuilt website
+- Searchable performer and community directories
 - Interactive proof-of-concept fair map
-- Accessibility guide
-- Notification preferences and browser permission test
-- OATF Passport demo with locally saved stamps
+- Expanded six-step OATF Passport
+- Notification preference center
+- Larger text, higher contrast and reduced-motion settings
 - Offline PWA caching
-- App install/share controls
+- App install and native share controls
 - GitHub Pages deployment workflow
-- Capacitor configuration for future native iOS and Android builds
+- Capacitor configuration for future iOS and Android builds
 
-## Fastest GitHub upload
+## Update the existing GitHub repository
 
-1. Create a new GitHub repository named `outatthefair-app`.
-2. Unzip this package.
-3. Upload **the contents inside the folder** to the repository root—not the outer folder itself.
-4. Commit to `main`.
-5. Open **Settings → Pages**.
-6. Under **Build and deployment**, choose **GitHub Actions**.
-7. The included workflow publishes the `www` folder.
+Upload the contents of this package over the existing `outatthefair-app` repository and choose **Replace** when GitHub asks about files with the same names.
 
-Your preview URL will be similar to:
+The existing `.github/workflows/deploy-pages.yml` workflow remains compatible with V0.2 and will publish the `www` folder automatically.
 
-`https://YOUR-GITHUB-NAME.github.io/outatthefair-app/`
-
-## Test locally without installing anything
+## Test locally
 
 From the repository folder:
 
@@ -53,13 +40,23 @@ python3 -m http.server 4173 --directory www
 
 Then open:
 
-`http://localhost:4173`
+```text
+http://localhost:4173
+```
 
-Do not open `www/index.html` directly as a file. Service workers and some browser features require a local server or HTTPS.
+Do not open `www/index.html` directly as a normal file. Service workers and some browser features require a local server or HTTPS.
 
-## Create the native iOS project
+## Create or refresh the native iOS project
 
 Capacitor 8 requires Node.js 22 or later and a current supported Xcode version.
+
+```bash
+npm install
+npx cap sync ios
+npx cap open ios
+```
+
+When creating the native project for the first time:
 
 ```bash
 npm install
@@ -70,60 +67,43 @@ npx cap open ios
 
 A double-click Mac helper is also included:
 
-`SETUP-MAC.command`
+```text
+SETUP-MAC.command
+```
 
-The generated `ios/` folder should be committed to GitHub after it has been created successfully on the Mac.
+## Updating app content
 
-## Updating content
+Most editable content remains in one file:
 
-Most content is in one file:
-
-`www/assets/data.js`
+```text
+www/assets/data.js
+```
 
 Use it to update:
 
-- Fairs and 2027 dates
-- Stages, addresses, ticket links, and directions
+- Fairs and confirmed 2027 dates
+- Stages, addresses, ticket links and website links
 - Performers and bios
-- Entertainment schedule
+- Entertainment schedules
 - Community organizations and booth numbers
 - Map pins
+- Passport challenges
+- Announcements
 - History timeline
 
-See `docs/CONTENT-UPDATE-GUIDE.md`.
+## Important notes
 
-## Important V0.1 notes
-
-- The included app icon is an original **temporary V0.1 icon**, not a replacement for the official OATF logo/unicorn. Replace it before App Store submission.
-- LA County Fair partner-demo content is intentionally labeled as a demonstration and does not announce a confirmed event.
-- Favorites, settings, and passport progress are stored locally on the device.
-- Remote push notifications, remote schedule editing, QR validation, user accounts, and an admin dashboard are planned for later releases.
-- The sample calendar uses a placeholder 2027 date solely to demonstrate calendar export.
-
-## Project structure
-
-```text
-outatthefair-app/
-├── www/                       Static PWA used by GitHub Pages and Capacitor
-│   ├── assets/data.js         Editable app content
-│   ├── assets/app.js          App behavior and routing
-│   ├── assets/styles.css      Complete visual system
-│   ├── icons/                 Temporary PWA/App icon set
-│   ├── index.html
-│   ├── manifest.webmanifest
-│   └── sw.js                  Offline cache
-├── .github/workflows/         GitHub Pages deployment
-├── capacitor.config.ts        Native app configuration
-├── package.json               Capacitor dependencies and commands
-├── SETUP-MAC.command          Native iOS setup helper
-└── docs/                      Setup and editing guides
-```
+- The app icon remains a temporary V0.x icon and should be replaced with the final approved OATF icon before App Store submission.
+- LA County Fair content is intentionally labeled as a product demonstration and is not a public event announcement.
+- Favorites, preferences and passport progress are stored locally on the device.
+- Remote push delivery, remote schedule editing, QR validation, user accounts and a production admin dashboard remain future phases.
+- The demo calendar uses a placeholder 2027 date solely to demonstrate calendar export.
 
 ## App identity
 
 - App name: `Out at the Fair`
 - Bundle identifier: `com.outatinc.outatthefair`
-- Version: `0.1.0`
+- Version: `0.2.0`
 - Web directory: `www`
 
 © OutAt Inc. Out at the Fair® is a registered brand of OutAt Inc.

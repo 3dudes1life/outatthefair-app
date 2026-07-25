@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 300" role="img" aria-label="Out at the Fair">
+<defs>
+ <linearGradient id="r" x1="0" x2="1">
+  <stop stop-color="#ff3d8d"/><stop offset=".32" stop-color="#ff7a35"/>
+  <stop offset=".58" stop-color="#ffd84a"/><stop offset=".78" stop-color="#27d6c8"/>
+  <stop offset="1" stop-color="#765cff"/>
+ </linearGradient>
+ <filter id="g"><feGaussianBlur stdDeviation="16"/></filter>
+</defs>
+<rect width="800" height="300" rx="38" fill="#09060f"/>
+<rect x="30" y="30" width="740" height="240" rx="32" fill="none" stroke="url(#r)" stroke-width="8"/>
+<ellipse cx="400" cy="150" rx="270" ry="70" fill="url(#r)" opacity=".14" filter="url(#g)"/>
+<text x="400" y="132" text-anchor="middle" fill="white" font-family="Arial,Helvetica,sans-serif" font-size="64" font-weight="800">OUT AT THE FAIR</text>
+<text x="400" y="198" text-anchor="middle" fill="url(#r)" font-family="Arial,Helvetica,sans-serif" font-size="30" font-weight="800" letter-spacing="8">ALL BELONG</text>
+</svg>

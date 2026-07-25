@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 950">
+<defs>
+ <radialGradient id="a"><stop stop-color="#ad2e72"/><stop offset="1" stop-color="#09060f"/></radialGradient>
+ <linearGradient id="b"><stop stop-color="#ff3d8d"/><stop offset=".3" stop-color="#ff8a3d"/><stop offset=".55" stop-color="#ffe25c"/><stop offset=".78" stop-color="#38dac8"/><stop offset="1" stop-color="#725cff"/></linearGradient>
+</defs>
+<rect width="1200" height="950" fill="url(#a)"/>
+<circle cx="600" cy="420" r="270" fill="none" stroke="url(#b)" stroke-width="34"/>
+<circle cx="600" cy="420" r="95" fill="#09060f" stroke="#fff" stroke-width="12"/>
+<g stroke="#fff" stroke-width="10" opacity=".85">
+ <line x1="600" y1="150" x2="600" y2="690"/><line x1="330" y1="420" x2="870" y2="420"/>
+ <line x1="410" y1="230" x2="790" y2="610"/><line x1="790" y1="230" x2="410" y2="610"/>
+</g>
+<text x="600" y="835" text-anchor="middle" fill="white" font-family="Arial" font-size="66" font-weight="800">ALL BELONG AT THE FAIR</text>
+</svg>

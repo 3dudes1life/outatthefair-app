@@ -1,7 +1,8 @@
-const CACHE = 'oatf-v0-1-0';
+const CACHE = 'oatf-v0-2-0';
 const APP_SHELL = [
   './', './index.html', './manifest.webmanifest',
   './assets/styles.css', './assets/data.js', './assets/app.js',
+  './assets/images/oatf-logo-fallback.svg', './assets/images/hero-fallback.svg',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'
 ];
 
@@ -19,10 +20,17 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  const requestUrl = new URL(event.request.url);
+  if (requestUrl.origin !== self.location.origin) {
+    event.respondWith(fetch(event.request).catch(() => caches.match('./assets/images/hero-fallback.svg')));
+    return;
+  }
   event.respondWith(
     caches.match(event.request).then((cached) => cached || fetch(event.request).then((response) => {
-      const copy = response.clone();
-      caches.open(CACHE).then((cache) => cache.put(event.request, copy));
+      if (response && response.ok) {
+        const copy = response.clone();
+        caches.open(CACHE).then((cache) => cache.put(event.request, copy));
+      }
       return response;
     }).catch(() => caches.match('./index.html')))
   );

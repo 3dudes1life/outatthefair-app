@@ -1,113 +1,67 @@
-# Content Update Guide
+# OATF App Content Update Guide
 
-All primary content is stored in:
+The main content file is:
 
-`www/assets/data.js`
-
-## Add a confirmed date
-
-Find the correct fair in the `fairs` array and replace:
-
-```js
-status: '2027 details coming soon',
-statusTone: 'coming',
-dateLabel: 'See you in 2027',
-timeLabel: 'Date and schedule to be announced',
+```text
+www/assets/data.js
 ```
 
-Example after confirmation:
+The app does not require a build step after ordinary content edits. Commit the updated file and GitHub Pages will redeploy the app.
 
-```js
-status: 'ON SALE NOW',
-statusTone: 'coming',
-dateLabel: 'Saturday, July 24, 2027',
-timeLabel: '12 PM–6 PM',
-```
+## Public fairs
 
-## Update the selected fair automatically
+Edit objects inside `fairs` to change:
 
-The initial selected fair is set in `www/assets/app.js`:
+- `status`
+- `dateLabel`
+- `timeLabel`
+- `stage`
+- `admission`
+- `description`
+- `websiteUrl`
+- `ticketUrl`
+- `mapUrl`
+- `features`
+- `accessibility`
 
-```js
-selectedFair: 'san-diego'
-```
+Keep unconfirmed events in a clear “2027 details coming soon” state.
 
-Change the value to any fair `id` from `data.js`.
+## Demo mode
 
-## Add a performer
+The `demoFair` and `demoSchedule` sections power the LA County partner presentation. Keep the demo label visible until an event is officially confirmed.
 
-Add an object inside `performers`:
+## Schedule
+
+Each `demoSchedule` item includes:
 
 ```js
 {
-  id: 'performer-slug',
-  name: 'Performer Name',
-  type: 'Music',
-  icon: '🎤',
-  bio: 'Approved performer bio.',
-  socials: []
+  id: 'unique-id',
+  time: '1:00 PM',
+  end: '1:15 PM',
+  title: 'OATF Story Time',
+  performerId: 'summer-daze',
+  category: 'Family',
+  location: 'Rainbow Stage',
+  description: 'A short description.',
+  status: 'live'
 }
 ```
 
-Use a unique lowercase ID with hyphens.
+Supported sample states are `past`, `live`, `upnext` and `future`.
 
-## Add a schedule entry
+## Announcements
 
-V0.1 uses `demoSchedule`. When the real 2027 schedule is ready, the same structure can be renamed or expanded into fair-specific schedules.
+Items in `announcements` may link to an app route with `route` or an external website with `url`.
 
-```js
-{
-  id: 'unique-event-id',
-  time: '2:15 PM',
-  end: '3:00 PM',
-  title: 'Performer Name',
-  performerId: 'performer-slug',
-  category: 'Music',
-  location: 'Plaza Stage',
-  description: 'Short schedule description.',
-  status: 'future'
-}
-```
+## Passport
 
-Allowed V0.1 visual states:
+Edit `passportChallenges` to change the six sample fair-day experiences. Each item needs a unique `id`.
 
-- `past`
-- `live`
-- `upnext`
-- `future`
+## Version and service worker
 
-Only one event should normally be `live` and one should be `upnext`.
+When publishing a new release:
 
-## Community organizations
-
-Edit the `partners` array. Each organization supports:
-
-- Name
-- Category
-- Booth number
-- Short description
-- Service tags
-- Emoji placeholder
-
-V0.2 can add official logos, URLs, phone numbers, operating hours, and remote partner editing.
-
-## Map pins
-
-Coordinates are percentages of the demo map:
-
-```js
-x: 52,
-y: 30
-```
-
-`x: 0, y: 0` is the top-left. `x: 100, y: 100` is the bottom-right.
-
-## Change app version
-
-Update all three places:
-
-1. `package.json`
-2. `www/assets/data.js`
-3. The service-worker cache name in `www/sw.js`
-
-Changing the cache name ensures returning users receive updated files.
+1. Update `version` in `www/assets/data.js`.
+2. Update `version` in `package.json`.
+3. Change the cache name in `www/sw.js` so devices receive the new files.
