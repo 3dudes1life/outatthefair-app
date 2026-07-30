@@ -1,8 +1,8 @@
-# Out at the Fair® App — V0.7 Fair Companion
+# Out at the Fair® App — V0.7.1 Fair Companion
 
-V0.7 makes the app meaningfully better than the website by turning it into the guest's live fair-day companion.
+V0.7.1 makes the app meaningfully better than the website by turning it into the guest's live fair-day companion.
 
-## New in V0.7
+## New in V0.7.1
 - Personalized guest dashboard
 - Faster Fair Mode command center
 - Happening Now / Up Next signals
@@ -16,7 +16,7 @@ V0.7 makes the app meaningfully better than the website by turning it into the g
 ## Locked app identity
 - Display name: `Out at the Fair`
 - Bundle identifier: `com.outatinc.outatthefair`
-- Version: `0.7.0`
+- Version: `0.7.1`
 
 ## Open in Xcode
 Extract the ZIP and run:

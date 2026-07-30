@@ -1,10 +1,15 @@
 #!/bin/bash
 set -euo pipefail
 cd "$(dirname "$0")"
-echo "🌈 Building Out at the Fair V0.7..."
+echo "🌈 Building Out at the Fair V0.7.1..."
 command -v node >/dev/null || { echo "Node.js 22+ is required."; exit 1; }
 node_major="$(node -p "process.versions.node.split('.')[0]")"
 if [ "$node_major" -lt 22 ]; then echo "Node.js 22+ is required. Current: $(node -v)"; exit 1; fi
+
+# Capacitor uses the JSON config. Remove any old TS config that may have been
+# created by a previous attempt and can trigger a TypeScript loader error.
+rm -f capacitor.config.ts
+
 npm install
 if [ ! -d ios/App ]; then npx cap add ios; fi
 npx cap sync ios
@@ -12,7 +17,7 @@ PBX="ios/App/App.xcodeproj/project.pbxproj"
 PLIST="ios/App/App/Info.plist"
 if [ -f "$PBX" ]; then
   /usr/bin/sed -i '' 's/PRODUCT_BUNDLE_IDENTIFIER = [^;]*/PRODUCT_BUNDLE_IDENTIFIER = com.outatinc.outatthefair/g' "$PBX"
-  /usr/bin/sed -i '' 's/MARKETING_VERSION = [^;]*/MARKETING_VERSION = 0.7.0/g' "$PBX"
+  /usr/bin/sed -i '' 's/MARKETING_VERSION = [^;]*/MARKETING_VERSION = 0.7.1/g' "$PBX"
 fi
 if [ -f "$PLIST" ]; then
   /usr/libexec/PlistBuddy -c "Delete :CFBundleDisplayName" "$PLIST" 2>/dev/null || true
