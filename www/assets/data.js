@@ -5,8 +5,8 @@
   The public 2027 fairs remain in a "coming soon" state until confirmed.
 */
 window.OATF_DATA = {
-  version: '0.6.0',
-  updated: 'July 25, 2026',
+  version: '0.7.0',
+  updated: 'July 30, 2026',
   brand: {
     name: 'Out at the Fair®',
     shortName: 'OATF',
@@ -228,6 +228,11 @@ window.OATF_DATA = {
     { id: 'belong', label: 'All Belong', kicker: 'OUT AT THE FAIR®', headline: 'ALL BELONG AT THE FAIR', accent: '#ff3d91' },
     { id: 'crew', label: 'OATF Crew', kicker: 'FAIR MODE · LIVE', headline: 'OUR OATF CREW', accent: '#35d8ff' },
     { id: 'glam', label: 'Glam Moment', kicker: 'SEE YOU AT THE FAIR', headline: 'SERVING FAIR-DAY GLAM', accent: '#ffe36e' }
+  ],
+  offers: [
+    { id: 'moms-sample', icon: '🍪', label: 'FAIR-DAY SAMPLE', title: 'Free sample with Pride', partner: "Mom’s Bakeshoppe", location: 'Community Row', details: 'Show this screen while wearing Pride colors. Demo offer for the V0.7 preview.', color: '#ff4d9d' },
+    { id: 'timbos-taste', icon: '🍬', label: 'PARTNER PERK', title: 'Complimentary licorice taste', partner: "Timbo’s Licorice", location: 'Partner Marketplace', details: 'One sample per guest while supplies last. Demo offer.', color: '#35d8ff' },
+    { id: 'community-gift', icon: '🌈', label: 'COMMUNITY BONUS', title: 'Collect a Pride sticker', partner: 'OATF Info', location: 'OATF Home Base', details: 'Visit the info booth and show your digital Passport. Demo offer.', color: '#ffe36e' }
   ]
 
 };

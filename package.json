@@ -1,8 +1,8 @@
 {
   "name": "outatthefair-app",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
-  "description": "Out at the Fair® V0.6 Together Edition — mobile-first PWA and Capacitor app.",
+  "description": "Out at the Fair\u00ae V0.7 Fair Companion \u2014 mobile-first PWA and Capacitor app.",
   "scripts": {
     "serve": "python3 -m http.server 4173 --directory www",
     "cap:init": "npx cap init 'Out at the Fair' 'com.outatinc.outatthefair' --web-dir www",
